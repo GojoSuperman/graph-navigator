@@ -195,6 +195,16 @@ export default function Home() {
                 <p>{res.llm.reason}</p>
               </div>
 
+              {/* 같은 질문을 3D 로 이어서 본다. 질문을 주소에 실어 보내면 저쪽에서 바로 그린다. */}
+              <Link className="to3d" href={`/viz?q=${encodeURIComponent(res.question)}`}>
+                <span className="to3d-main">건너간 다리를 3D로 보기</span>
+                <span className="to3d-sub">
+                  선 위에 뜨는 이름이 다리입니다 — 작품과 작품 사이에 공통 어휘가 없어도
+                  그 사람을 거치면 이어집니다
+                </span>
+                <span className="to3d-go" aria-hidden="true">→</span>
+              </Link>
+
               <div className="films">
                 <h2>근거 {res.evidence.length}편</h2>
                 <p className="hint">
