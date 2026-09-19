@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import stats from "@/data/stats.json";
 import { useEffect, useState } from "react";
 import { VIZ_EVENT } from "./VizDock.tsx";
 import { storedKey } from "./Settings.tsx";
@@ -152,7 +153,9 @@ export default function Home() {
       <header className="hd">
         <h1>영화 네비게이터</h1>
         <p>
-          한국 영화 1,018편과 그 인물이 참여한 외국 영화 703편을 그래프로 이었습니다.
+          {/* 숫자는 build-graph 가 만든 stats.json 에서 온다 — 손으로 적으면 낡는다 */}
+          한국 영화 {stats.korean.toLocaleString()}편과 그 인물이 참여한 외국 영화{" "}
+          {stats.foreign.toLocaleString()}편을 그래프로 이었습니다.
           <b> 줄거리에 없는 답</b>을 인물이라는 다리를 건너 찾습니다.
         </p>
       </header>

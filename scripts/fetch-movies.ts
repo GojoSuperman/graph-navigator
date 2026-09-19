@@ -34,10 +34,21 @@ if (!KEY) {
 
 const OUT = join(import.meta.dirname, "..", "data");
 const PAGES = Number(process.argv[2] ?? 0) || Infinity;  // 0 = 끝까지
-const MIN_VOTES = 20;                              // 표가 너무 적으면 정보가 부실하다
+/**
+ * 투표 수는 **1차 거름망일 뿐**이고, 진짜 기준은 아래 MIN_CAST 다.
+ *
+ * 처음엔 20표였다. "표가 적으면 정보가 부실하다" 는 가정이었는데,
+ * 그 가정은 **1980년 이전 영화로 잰 것**이었다. 현대 독립영화에는 안 맞는다.
+ *   《지슬: 끝나지 않은 세월 2》(2013)  13표 — 줄거리 211자 · 출연 21명 · 감독 오멸
+ *   《영웅》(2022) · 《야구소녀》(2020) · 《군산: 거위를 노래하다》(2018)  전부 19표
+ * 한국 영화는 TMDB 투표 수가 전반적으로 낮다. 인기로 자르면 작품이 아니라
+ * **관객 수를 자르게 된다.**
+ */
+const MIN_VOTES = 5;                               // 비용을 줄이는 1차 거름망
+const MIN_CAST = 3;                                // 진짜 기준 — 관계를 만들 사람이 있는가
 const EXPAND_MIN_FILMS = 2;                        // 말뭉치에 2편 이상 있는 인물만 확장
 const EXPAND_MIN_VOTES = 100;                      // 확장으로 들어올 외국 작품의 하한
-const MAX_MOVIES = Number(process.env.MAX_MOVIES ?? 2500);  // 폭주 방지 상한
+const MAX_MOVIES = Number(process.env.MAX_MOVIES ?? 6000);  // 폭주 방지 상한
 
 const UA = { "User-Agent": "movie-navigator/0.1 (portfolio study project)" };
 
@@ -53,7 +64,7 @@ async function api(path: string, q: Record<string, string> = {}): Promise<any> {
 }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** 줄거리가 비었거나 표가 적은 것은 버린다 — 법령에서 본문 없는 고시를 뺀 것과 같다 */
+/** 줄거리가 비었거나 표가 너무 적은 것은 버린다 (출연진 수는 크레딧을 받아 봐야 안다) */
 const usable = (m: any, minVotes: number) =>
   Boolean(m?.id) && !m.adult && (m.overview ?? "").trim().length > 10 && (m.vote_count ?? 0) >= minVotes;
 
@@ -150,6 +161,26 @@ async function loadCredits(ids: number[]) {
 await loadCredits([...movies.keys()]);
 console.log(`\r   ${done}편 완료 · ${((Date.now() - t0) / 1000).toFixed(0)}초 · 인물 ${people.size}명`);
 
+/**
+ * ②-b 관계를 만들 사람이 없는 작품을 버린다.
+ *
+ * 이 프로젝트는 인물이라는 다리로 답한다. 출연진이 없으면 노드는 들어와도
+ * **선이 안 생긴다.** 투표 수는 이것의 대리 지표였을 뿐이고, 크레딧을 받아 본
+ * 지금은 대리가 아니라 **직접** 잴 수 있다.
+ */
+const thin: number[] = [];
+for (const id of [...movies.keys()]) {
+  const c = credits.get(id);
+  if ((c?.cast ?? []).length >= MIN_CAST) continue;
+  thin.push(id);
+  movies.delete(id);
+  credits.delete(id);
+  for (const s of filmsOfPerson.values()) s.delete(id);
+}
+// 아무 작품에도 안 남은 사람은 같이 지운다
+for (const [pid, s] of [...filmsOfPerson]) if (!s.size) { filmsOfPerson.delete(pid); people.delete(pid); }
+console.log(`\n②-b 출연진 ${MIN_CAST}명 미만 ${thin.length}편 제외 → 한국 영화 ${movies.size}편 · 인물 ${people.size}명`);
+
 // ── ③ 인물을 따라 외국 작품으로 1홉 확장 ─────────────────────────────
 const bridgePeople = [...filmsOfPerson.entries()]
   .filter(([, s]) => s.size >= EXPAND_MIN_FILMS)
@@ -209,7 +240,7 @@ console.log(`\r   ${an}명 확인 · 한글 별칭이 있는 인물 ${Object.key
 await mkdir(OUT, { recursive: true });
 const raw = {
   fetchedAt: new Date().toISOString(),
-  params: { PAGES, MIN_VOTES, EXPAND_MIN_FILMS, EXPAND_MIN_VOTES },
+  params: { PAGES, MIN_VOTES, MIN_CAST, EXPAND_MIN_FILMS, EXPAND_MIN_VOTES },
   genres: Object.fromEntries(GENRE),
   movies: [...movies.values()],
   credits: Object.fromEntries([...credits.entries()].map(([k, v]) => [k, { cast: (v.cast ?? []).slice(0, 30), crew: (v.crew ?? []).filter((x: any) => ["Director", "Screenplay", "Writer"].includes(x.job)) }])),

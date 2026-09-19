@@ -31,7 +31,64 @@ const SYSTEM = `너는 영화 정보를 **주어진 근거만으로** 답하는 
 2. 작품명은 《》로, 사람 이름은 그대로 쓴다.
 3. 두세 문장으로 짧게. 목록이 자연스러우면 목록으로.
 4. 근거가 질문과 어긋나면 그렇다고 말한다. 억지로 답을 만들지 마라.
-5. 한국어로 답한다.`;
+5. **질문에 조건이 여럿이면 전부 확인하고 답한다.** 하나만 맞는 작품을 답이라고
+   내놓지 마라. 「질문의 낱말이 근거에서 확인되는가」 블록이 있으면 그것이
+   코드가 대조한 사실이다 — "근거 어디에도 없음" 인 낱말은 **없는 것이다.**
+   그런 조건이 있으면 "…는 확인되지 않습니다" 라고 먼저 말하고, 부분적으로만
+   맞는 작품은 "일부만 맞는다" 고 밝혀서 내놓는다.
+6. 한국어로 답한다.`;
+
+
+/**
+ * 질문의 낱말이 근거에서 실제로 확인되는지 **코드가 재서** 모델에게 준다.
+ *
+ * 실측 — "제주도에 관련된 영화중 민간인을 빨갱이로 죽인 사건":
+ *   모델이 《최후의 증인》을 답이라고 했다. 줄거리에 '빨갱이' 가 있어서다.
+ *   그런데 그 영화는 지리산·6.25 이야기고 **'제주도' 는 어디에도 없다.**
+ *   조건 하나만 맞는 것을 답으로 내놓은 것이다.
+ *
+ * "조건을 전부 확인하라" 고 프롬프트에 적어도 고쳐지지 않았다. 모델에게
+ * 대조를 시키는 대신 **대조 결과를 건네주는** 것이 맞다 — 글자가 있는지 없는지는
+ * 코드가 틀릴 수 없고, 그러면 모델은 판단만 하면 된다.
+ */
+const TERM_NOISE = new Set([
+  "영화", "작품", "이야기", "내용", "줄거리", "사건", "관련", "관련된", "대한", "대해",
+  "알려줘", "알려", "추천", "뭐야", "뭔가요", "무엇", "어떤", "어떤거지", "누구", "있는",
+  "나오는", "나온", "출연", "감독", "배우", "다룬", "그린", "중에", "중인", "정도",
+]);
+
+function termCheck(r: AskResult): string[] {
+  const terms = [...new Set(
+    (r.question.match(/[가-힣]{2,}/g) ?? [])
+      .map((w) => w.replace(/(에서|으로|하는|되는|이라는|라는|에게|까지|부터|보다|처럼|이나|거나|에는|의|을|를|이|가|은|는|와|과|로|도|만|중)$/, ""))
+      .filter((w) => w.length >= 2 && !TERM_NOISE.has(w)),
+  )].slice(0, 5);
+  if (terms.length < 2 || !r.evidence.length) return [];   // 조건이 하나면 대조할 것이 없다
+
+  /**
+   * **낱말마다 따로 찾으면 안 된다.** '제주도' 가 《올레》에 있고 '빨갱이' 가
+   * 《최후의 증인》에 있다고 해서, 둘을 **모두** 가진 작품이 있는 것은 아니다.
+   * 질문이 묻는 것은 결합이므로 **작품 단위로** 몇 개를 만족하는지 센다.
+   */
+  const scored = r.evidence.map((e) => {
+    const text = `${e.title} ${e.overview ?? ""}`;
+    return { title: e.title, has: terms.filter((t) => text.includes(t)) };
+  }).sort((a, b) => b.has.length - a.has.length);
+
+  const best = scored[0]?.has.length ?? 0;
+  if (best === terms.length) return [];   // 전부 만족하는 작품이 있다 — 말할 것 없다
+
+  const rows = [
+    "[조건 대조 — 코드가 근거 본문에서 직접 세어 본 것]",
+    `질문의 낱말: ${terms.join(" · ")}`,
+    `**${terms.length}개를 모두 담은 작품은 근거에 없다.** 가장 많이 맞은 것도 ${best}개다.`,
+  ];
+  for (const x of scored.slice(0, 3)) {
+    const miss = terms.filter((t) => !x.has.includes(t));
+    rows.push(`- 《${x.title}》 : 맞음 ${x.has.join("·") || "없음"} / 없음 ${miss.join("·")}`);
+  }
+  return rows;
+}
 
 /** 모델에게 보여 줄 근거 — 화면에 뜨는 것과 같은 내용이어야 한다 */
 function evidenceBlock(r: AskResult): string {
@@ -79,6 +136,7 @@ function evidenceBlock(r: AskResult): string {
       if (e.overview) lines.push(`    줄거리: ${e.overview.replace(/\s+/g, " ").slice(0, 160)}`);
     }
   }
+  lines.push(...termCheck(r));
   return lines.join("\n");
 }
 

@@ -121,6 +121,18 @@ for (const g of Object.keys(genreIndex)) {
 const graph: GraphData = { movies, people, collections, edges, genreIndex };
 await writeFile(join(DATA, "graph.json"), JSON.stringify(graph), "utf-8");
 
+/**
+ * 화면 첫 줄에 쓸 편수. 손으로 적어 두었더니 **수집을 넓힌 뒤에도 옛 숫자가
+ * 그대로 떠 있었다** (1,018편이라고 적힌 채 2,212편을 쓰고 있었다).
+ * 숫자를 말하는 곳은 숫자를 만드는 곳과 같아야 한다.
+ */
+const koCount = movies.filter((m) => m.originalLanguage === "ko").length;
+await writeFile(
+  join(DATA, "stats.json"),
+  JSON.stringify({ movies: movies.length, korean: koCount, foreign: movies.length - koCount, people: people.length, edges: edges.length }, null, 2),
+  "utf-8",
+);
+
 // ── 품질 보고서 ──────────────────────────────────────────────────────
 const deg = new Map<string, number>();
 for (const e of edges) {

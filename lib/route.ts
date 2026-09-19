@@ -11,7 +11,8 @@
 
 import { BM25 } from "./bm25.ts";
 import type { MovieGraph } from "./graph.ts";
-import type { Route } from "./types.ts";
+import type { Movie, Person, Route } from "./types.ts";
+import STATS from "../data/stats.json" with { type: "json" };
 import { nameMatches } from "./romanize.ts";
 
 /** 조회·탐색으로 답할 수 없는 것 — 답하지 않는 것이 정답이다 */
@@ -136,6 +137,37 @@ const norm = (s: string) => s.replace(/\s+/g, "").toLowerCase();
  * ("송강호**와**", "기생충**에서**"). 그래서 어절 시작에서만 맞춘다.
  * 어절 중간에서 시작하는 일치는 우연이다.
  */
+/**
+ * 어절이 **그 낱말로 끝나는가** (조사는 붙어도 된다).
+ * mentions 는 시작만 보므로 '아이' 가 '아이유가' 에 걸린다. 부제를 뗀 짧은
+ * 본 제목처럼 **짧고 흔한 것**을 찾을 때는 끝도 봐야 한다.
+ */
+const PARTICLES = /^(은|는|이|가|을|를|와|과|의|에|에서|에게|로|으로|도|만|요|야|이란|란|이라는|라는|인데|부터|까지)?$/;
+export function mentionsWhole(question: string, name: string): boolean {
+  const n = norm(name);
+  if (n.length < 2) return false;
+  return question.split(/\s+/).some((raw) => {
+    // 구두점은 **가운데 것도** 턴다. 앞뒤만 털었더니 《버닝》에서 의 '》' 가 남아
+    // "버닝》에서" 가 되고, 조사 판정이 깨져 두 글자 제목을 통째로 놓쳤다.
+    const t = norm(raw.replace(/[^0-9A-Za-z가-힣]+/g, ""));
+    return t.startsWith(n) && PARTICLES.test(t.slice(n.length));
+  });
+}
+
+/**
+ * 두 글자짜리는 **끝까지 봐야 한다.**
+ * 실측 — 말뭉치가 커지며 《아이》(2022)가 들어오자 "**아이**유가 나온 영화" 에 걸렸다.
+ * 세 글자 이상은 우연히 남의 낱말 앞부분이 되는 일이 드물어 지금 규칙을 둔다.
+ */
+const mentionsName = (question: string, name: string) =>
+  norm(name).length <= 2 ? mentionsWhole(question, name) : mentions(question, name);
+
+/** 부제를 뗀 본 제목. "지슬: 끝나지 않은 세월 2" → "지슬" */
+const mainTitle = (t: string) => {
+  const m = t.split(/\s*[:：]\s*| - /)[0].trim();
+  return m.length >= 2 && m.length < t.length ? m : "";
+};
+
 export function mentions(question: string, name: string): boolean {
   const n = norm(name);
   if (n.length < 2) return false;
@@ -185,16 +217,37 @@ export function peopleIn(question: string, g: MovieGraph) {
    * "아이유가 나온 영화" 가 하나도 안 잡혔던 이유다(저장된 이름은 `IU`).
    * 배역명의 로마자 문제와 달리 변환 규칙으로는 풀 수 없어서 별칭을 받아 둔다.
    */
+  /**
+   * 중복을 털 때 **본명이 아니라 실제로 걸린 글자**를 본다.
+   *
+   * 실측 — "송강호와 **이선균이** 함께 출연한 영화는?" 에 작가 '이맹유' 가 끼어들었다.
+   * 별칭이 '이선' 이라 '이선균이' 의 앞부분에 걸린 것이다. 그런데 중복 판정은
+   * 본명끼리 했다 — "이선균".includes("이맹유") 는 거짓이라 살아남았고,
+   * 교집합이 세 사람으로 늘어 **"함께 나온 작품이 없다" 는 오답**이 나왔다.
+   * 걸린 글자로 비교하면 '이선' 은 '이선균' 에 먹힌다.
+   */
   const hits = [...g.people.values()]
-    .filter((p) =>
-      (p.name.length >= 2 && mentions(question, p.name)) ||
-      (p.aliases ?? []).some((a) => a.length >= 2 && mentions(question, a)),
-    )
-    .sort((a, b) => b.name.length - a.name.length || b.popularity - a.popularity);
-  // '송강호' 가 잡혔으면 '송강' 은 같은 자리를 가리키는 잡음이다. 긴 쪽이 이긴다.
-  const out: typeof hits = [];
-  for (const p of hits) {
-    if (out.some((x) => norm(x.name).includes(norm(p.name)))) continue;
+    .map((p) => {
+      /**
+       * **흔한 말과 같은 이름은 쓰지 않는다.**
+       * 실측 — "현빈과 손예진이 함께 **주연을** 맡은 영화는?" 에 인물 '주연' 이 끼어들어
+       * 교집합이 세 사람이 됐고, 공통작이 0이 되어 《협상》이 **전제 오류**로 막혔다.
+       * 말뭉치를 키우자 이런 이름이 실제로 들어왔다 — 배역명에 쓰던 목록을 여기도 쓴다.
+       * 그런 이름의 배우를 못 찾게 되지만, 흔한 말로 읽히는 쪽이 압도적으로 많다.
+       */
+      const labels = [p.name, ...(p.aliases ?? [])]
+        .filter((l) => l.length >= 2 && !NOT_A_CHARACTER.has(l) && mentionsName(question, l))
+        .sort((a, b) => norm(b).length - norm(a).length);
+      return labels.length ? { p, hit: norm(labels[0]) } : null;
+    })
+    .filter((x): x is { p: Person; hit: string } => x !== null)
+    .sort((a, b) => b.hit.length - a.hit.length || b.p.popularity - a.p.popularity);
+
+  const out: Person[] = [];
+  const taken: string[] = [];
+  for (const { p, hit } of hits) {
+    if (taken.some((t) => t.includes(hit))) continue;   // 같은 자리를 가리키는 짧은 것
+    taken.push(hit);
     out.push(p);
   }
   return out;
@@ -203,12 +256,29 @@ export function peopleIn(question: string, g: MovieGraph) {
 /** 질문에 등장하는 **모든** 작품 */
 export function titlesIn(question: string, g: MovieGraph) {
   const q = norm(question);
+  /**
+   * 부제까지 그대로 말하는 사람은 없다.
+   * 실측 — "지슬 어떤 영화야?" 가 말뭉치의 《지슬: 끝나지 않은 세월 2》를 못 찾아
+   * **"수집 범위에서 찾지 못했습니다"** 라고 답했다. 작품은 있었는데.
+   *
+   * 본 제목은 짧고 흔할 수 있으므로(《아이: …》의 '아이' 가 '아이유가' 에 걸린다)
+   * 시작만 보는 mentions 대신 **끝까지 보는** mentionsWhole 로 대조한다.
+   */
   const hits = [...g.movies.values()]
-    .filter((m) => m.title.length >= 2 && mentions(question, m.title))
-    .sort((a, b) => b.title.length - a.title.length || b.popularity - a.popularity);
-  const out: typeof hits = [];
-  for (const m of hits) {
-    if (out.some((x) => norm(x.title).includes(norm(m.title)))) continue;
+    .map((m) => {
+      if (m.title.length >= 2 && mentionsName(question, m.title)) return { m, hit: norm(m.title) };
+      const main = mainTitle(m.title);
+      if (main && mentionsWhole(question, main)) return { m, hit: norm(main) };
+      return null;
+    })
+    .filter((x): x is { m: Movie; hit: string } => x !== null)
+    .sort((a, b) => b.hit.length - a.hit.length || b.m.popularity - a.m.popularity);
+
+  const out: Movie[] = [];
+  const taken: string[] = [];
+  for (const { m, hit } of hits) {
+    if (taken.some((t) => t.includes(hit))) continue;
+    taken.push(hit);
     out.push(m);
   }
   return out;
@@ -241,12 +311,41 @@ export function seedsFromPeopleIntersection(question: string, g: MovieGraph, top
  *
  * 답이 **사람**이므로 씨앗으로는 그 작품들을 돌려주고, 겹치는 인물은 따로 계산한다.
  */
-export function commonPeople(question: string, g: MovieGraph, top = 5) {
-  const picked = titlesIn(question, g);
-  if (picked.length < 2) return { movies: [] as string[], people: [] as { id: string; name: string; acted?: boolean }[] };
+/**
+ * 제목이 같은 작품을 **묶어서** 돌려준다.
+ *
+ * titlesIn 은 한 제목당 한 편만 남기고 인기순으로 고른다. 그런데 말뭉치가 커지며
+ * 《괴물》이 두 편이 됐고(봉준호 2006 · 고레에다 2023), 인기가 높은 2023년작이
+ * 뽑혔다. 그 바람에 **"송강호가 살인의 추억·괴물·기생충에 모두 출연했다"** 가
+ * 거짓으로 채점됐다 — 맞는 말인데.
+ *
+ * 어느 《괴물》인지는 **인기가 아니라 질문의 나머지가 정한다.** 그러니 여기서
+ * 고르지 말고 다 넘긴 뒤, 공통 인물이 나오는 조합을 쓰게 한다.
+ */
+function titleGroupsIn(question: string, g: MovieGraph): Movie[][] {
+  const groups = new Map<string, Movie[]>();
+  for (const m of titlesIn(question, g)) groups.set(norm(m.title), [m]);
+  for (const m of g.movies.values()) {
+    const k = norm(m.title);
+    const grp = groups.get(k);
+    if (grp && !grp.some((x) => x.id === m.id)) grp.push(m);
+  }
+  return [...groups.values()];
+}
 
-  const sets = picked.slice(0, 4).map((m) => new Set(g.creditsOf(m.id).map((e) => e.from)));
+export function commonPeople(question: string, g: MovieGraph, top = 5) {
+  const groups = titleGroupsIn(question, g).slice(0, 4);
+  if (groups.length < 2) return { movies: [] as string[], people: [] as { id: string; name: string; acted?: boolean }[] };
+
+  // 제목 묶음마다 "그 제목의 어느 편에든 참여한 사람" 을 모은 뒤 교집합을 낸다
+  const sets = groups.map((grp) => new Set(grp.flatMap((m) => g.creditsOf(m.id).map((e) => e.from))));
   const common = [...sets[0]].filter((id) => sets.every((s) => s.has(id)));
+
+  /** 공통 인물이 실제로 참여한 편을 고른다 — 동명이작 중 어느 것인지는 이걸로 정해진다 */
+  const picked = groups.map((grp) =>
+    grp.find((m) => common.length && common.some((pid) => g.creditsOf(m.id).some((e) => e.from === pid))) ?? grp[0],
+  );
+
   return {
     movies: picked.slice(0, 4).map((m) => m.id),
     // "배우는 누구인가요" 를 물었는데 감독을 먼저 내놓으면 답이 아니다.
@@ -525,7 +624,32 @@ export function seedsFromCharacterActor(question: string, g: MovieGraph, top = 8
       if (!from.includes(e.to) && g.movie(e.to)) out.push(e.to);
     }
   }
-  return [...new Set(out)]
+  let pool = [...new Set(out)];
+
+  /**
+   * 질문은 대개 **답을 좁히는 두 번째 조건**을 들고 있는데, 여기서 그걸 버렸다.
+   *
+   *   "《버닝》에서 종수를 연기한 배우가 **조태오로** 출연한 영화"   → 배역명
+   *   "…광해군을 연기한 배우가 출연한 **김지운 감독** 영화"        → 감독
+   *
+   * 버리면 그 배우의 작품이 통째로 남는다. 실측 — 유아인 16편에서 《베테랑》이
+   * 근거 예산(10편) 밖으로 밀렸다. 배우는 맞게 찾아 놓고 답을 잘라낸 것이다.
+   * **말뭉치가 커질수록 한 사람의 작품 수가 늘어 이 손실이 커진다** —
+   * 근거를 더 담는 것으로는 못 막고, 질문이 준 조건을 쓰는 것이 맞다.
+   */
+  const directors = peopleIn(question, g).filter((p) => g.filmsOf(p.id, "DIRECTED").length > 0);
+  if (directors.length) {
+    const byDir = pool.filter((id) =>
+      g.creditsOf(id, "DIRECTED").some((e) => directors.some((d) => d.id === e.from)));
+    if (byDir.length) pool = byDir;
+  }
+  // 두 번째 배역명 — cands 에는 첫 배역명도 들어 있지만, 그것은 출발 작품에만 있다
+  const byChar = pool.filter((id) =>
+    g.creditsOf(id, "ACTED_IN").some((e) => e.as && actors.has(e.from) &&
+      [...cands].some((c) => nameMatches(c, e.as!))));
+  if (byChar.length && byChar.length < pool.length) pool = byChar;
+
+  return pool
     .map((id) => g.movie(id)!)
     .sort((a, b) => b.popularity - a.popularity)
     .slice(0, top)
@@ -650,8 +774,23 @@ export function findSeeds(question: string, g: MovieGraph, top = 3): string[] {
    *   정작 BM25 2위가 《부산행》이었다.
    * 그래서 배역 씨앗은 **BM25 를 막지 않는다.** 앞에 두되 뒤를 함께 담는다.
    */
+  /**
+   * **확실한 단서가 있어도 BM25 를 막지 않는다.**
+   *
+   * 실측 — "독일 기자를 태운 택시기사가 **1980년** 광주로 향하는 영화는?":
+   *   '1980년' 이 《1980》(2024)이라는 **제목**에 걸려 이 분기로 들어왔고,
+   *   BM25 가 이미 1위로 뽑아 둔 《택시운전사》(42.79점)는 **호출조차 되지 않았다.**
+   *
+   * 바로 아래 배역 씨앗에서 똑같은 일을 겪고 고쳤는데(《부산행》 사고),
+   * 제목에는 안 고쳤었다. **같은 함정의 다른 입구다.**
+   * 확실한 단서를 앞에 두는 것은 맞지만, 뒤를 닫을 이유는 없다 —
+   * 순서가 이미 우선순위를 표현하고, 넘치는 것은 근거 예산이 자른다.
+   */
   if (titles.length || awards.length || pAwards.length) {
-    return [...new Set([...pAwards, ...titles, ...chars, ...awards, ...people])];
+    return [...new Set([
+      ...pAwards, ...titles, ...chars, ...awards, ...people,
+      ...seedsFromKeywords(question, g, top),
+    ])];
   }
   return [
     ...new Set([
@@ -710,7 +849,7 @@ export function checkPremise(question: string, g: MovieGraph): PremiseCheck {
     return {
       broken: true,
       reason: "질문에 나온 **인물이나 작품을 수집 범위에서 찾지 못했습니다**",
-      instead: "이 도구는 한국 영화 1,018편과 그 인물이 참여한 외국 영화 703편만 다룹니다",
+      instead: `이 도구는 한국 영화 ${STATS.korean.toLocaleString()}편과 그 인물이 참여한 외국 영화 ${STATS.foreign.toLocaleString()}편만 다룹니다`,
     };
   }
 
