@@ -251,3 +251,58 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 @media (max-width: 720px) {
   .viz-legend { position: static; margin: 10px 12px 0; flex-direction: row; flex-wrap: wrap; gap: 10px; }
 }
+
+/* ── 2단 껍데기 — 왼쪽 페이지 / 오른쪽 붙박이 3D ────────────────── */
+.shell { display: grid; grid-template-columns: minmax(0, 1fr) 420px; align-items: stretch; }
+.shell-main { min-width: 0; }
+@media (max-width: 1100px) { .shell { grid-template-columns: minmax(0, 1fr) 340px; } }
+@media (max-width: 860px) { .shell { grid-template-columns: 1fr; } }
+
+.dock {
+  position: sticky; top: 47px; align-self: start;
+  height: calc(100vh - 47px);
+  display: flex; flex-direction: column;
+  background: #0b0d12; border-left: 1px solid var(--line);
+}
+.dock.closed { height: auto; }
+@media (max-width: 860px) { .dock { position: static; height: 60vh; border-left: 0; border-top: 1px solid var(--line); } }
+
+.dock-bar {
+  display: flex; align-items: center; gap: 10px; padding: 7px 10px;
+  border-bottom: 1px solid #222833; background: #0e1118;
+}
+.dock-bar button {
+  font: inherit; font-size: 12px; font-weight: 600; padding: 4px 10px; cursor: pointer;
+  color: #98a2b3; background: transparent; border: 1px solid #2a303a; border-radius: 6px;
+}
+.dock-bar button:hover { color: #d8dee8; border-color: #3a424f; }
+.dock-title {
+  font-size: 12px; color: #8b95a5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dock-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.dock-stage canvas { display: block; }
+.dock-empty {
+  position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
+  margin: 0; padding: 0 20px; color: #6b7585; font-size: 12.5px; line-height: 1.8;
+}
+.dock-empty b { color: #7ee787; }
+.dock-legend {
+  position: absolute; left: 10px; bottom: 10px; z-index: 3;
+  display: flex; gap: 10px; padding: 6px 10px; border-radius: 8px;
+  background: rgba(11, 13, 18, 0.8); border: 1px solid #2a303a;
+}
+.dock-legend span { display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: #c6cedb; }
+.dock-legend .dot { width: 8px; height: 8px; border-radius: 50%; }
+.dock-legend .dot.ko { background: #64b5ff; }
+.dock-legend .dot.fo { background: #ffb86b; }
+.dock-legend .dot.br { background: #7ee787; }
+
+/* 2단이 되었으니 본문 폭 제한을 푼다 */
+.shell-main .wrap { max-width: 820px; }
+.shell-main .wrap.wide { max-width: none; }
+
+.to3d-mini {
+  margin: 0 0 16px; padding: 9px 13px; border-radius: 8px; font-size: 12.5px;
+  background: var(--accent-soft); border: 1px solid var(--line); color: var(--muted);
+}
+.to3d-mini b { color: var(--ink); }

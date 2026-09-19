@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+import VizDock from "./VizDock.tsx";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,11 +18,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Link href="/">질문</Link>
           <Link href="/browse">작품 탐색기</Link>
           <Link href="/map">지도</Link>
-          <Link href="/viz">3D</Link>
+          <Link href="/viz">3D 전체화면</Link>
           {/* TMDB 이용 약관이 요구하는 고지 */}
           <span className="src">데이터 · TMDB (인증·보증 관계 없음)</span>
         </nav>
-        {children}
+        {/*
+          화면을 세로로 나눈다. 왼쪽은 각자 독립된 페이지, 오른쪽은 **붙박이 3D**.
+          3D 를 별도 페이지로 두었더니 보러 가면 원래 보던 것을 떠나야 했다.
+        */}
+        <div className="shell">
+          <div className="shell-main">{children}</div>
+          <Suspense fallback={null}>
+            <VizDock />
+          </Suspense>
+        </div>
       </body>
     </html>
   );

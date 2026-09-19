@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { VIZ_EVENT } from "./VizDock.tsx";
 import type { AskResult, EvidenceMovie, PathStep } from "@/lib/ask.ts";
 
 type Payload = AskResult & { answer: string | null; llm: { reason: string } };
@@ -102,6 +103,35 @@ export default function Home() {
     }
   }
 
+  /**
+   * 답이 나오면 오른쪽 3D 패널에 알린다.
+   * 질문의 답은 클라이언트 상태라 주소가 바뀌지 않으므로, 주소 대신 이벤트로 넘긴다.
+   */
+  useEffect(() => {
+    if (!res) return;
+    const detail = res.refused || res.premiseBroken ? null : {
+      title: res.question,
+      nodes: res.evidence.map((e) => ({
+        id: e.id, label: e.title, hop: Math.min(e.path.length, 3),
+        korean: e.korean, isSeed: e.isSeed,
+      })),
+      edges: (() => {
+        const seen = new Set<string>();
+        const out: { from: string; to: string; via: string }[] = [];
+        for (const e of res.evidence) {
+          for (const s of e.path) {
+            const k = `${s.from}>${s.to}`;
+            if (seen.has(k)) continue;
+            seen.add(k);
+            out.push({ from: s.from, to: s.to, via: s.via });
+          }
+        }
+        return out;
+      })(),
+    };
+    window.dispatchEvent(new CustomEvent(VIZ_EVENT, { detail }));
+  }, [res]);
+
   const hasAnswer =
     res && !res.refused && !res.premiseBroken &&
     (res.characters.length > 0 || res.commonMovies.length > 0 || res.commonPeople.length > 0);
@@ -197,10 +227,9 @@ export default function Home() {
 
               {/* 같은 질문을 3D 로 이어서 본다. 질문을 주소에 실어 보내면 저쪽에서 바로 그린다. */}
               <Link className="to3d" href={`/viz?q=${encodeURIComponent(res.question)}`}>
-                <span className="to3d-main">건너간 다리를 3D로 보기</span>
+                <span className="to3d-main">3D를 전체 화면으로</span>
                 <span className="to3d-sub">
-                  선 위에 뜨는 이름이 다리입니다 — 작품과 작품 사이에 공통 어휘가 없어도
-                  그 사람을 거치면 이어집니다
+                  오른쪽 패널에 이미 그려져 있습니다. 크게 돌려 보려면 누르세요
                 </span>
                 <span className="to3d-go" aria-hidden="true">→</span>
               </Link>
