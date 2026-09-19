@@ -28,7 +28,7 @@ const bm25 = new BM25(
 );
 
 // 채점에서 빼는 유형 — 기준 작품을 데려오는 것이 목표가 아닌 문항들
-const REFUSE = ["out_of_scope", "no-answer"];
+const REFUSE = ["out_of_scope", "no-answer", "verify-claim", "ranking"];
 const titleOf = (id: string) => g.movie(id)?.title ?? id;
 
 type Row = {
@@ -115,7 +115,7 @@ for (const r of scored) {
 }
 
 L("\n  [ 유형별 — 기준 작품을 근거로 데려왔는가 ]");
-for (const kind of ["character", "filmography", "bridge", "intersect-movie", "intersect-person", "award", "content", "ranking"]) {
+for (const kind of ["character", "filmography", "bridge", "intersect-movie", "intersect-person", "award", "release", "content"]) {
   const s = scored.filter((r) => r.kind === kind);
   if (!s.length) continue;
   const gh = s.filter((r) => r.graphHit).length, bh = s.filter((r) => r.bm25Hit).length;
@@ -146,6 +146,23 @@ L(`    ${oos.filter((r) => r.refused).length}/${oos.length} 정상 거절`);
 // "추격자·황해·곡성에 모두 출연한 배우는?" — 그런 배우가 **없다**.
 // 근거를 늘어놓으면 답하지 않으면서 답하는 척하는 것이 된다.
 // 거절과는 다르다. 이쪽은 **찾아본 결과**이므로 더 강한 주장이다.
+// ── 참/거짓 판별 ──────────────────────────────────────────────────────
+// "A는 X·Y·Z에 모두 출연했다" — 틀린 전제가 섞여 있다. 지어내지 않는지를 본다.
+const vc = gold.items.filter((i: any) => i.kind === "verify-claim");
+if (vc.length) {
+  L("\n  [ 참/거짓 판별 — 틀린 전제를 알아보는가 ]");
+  let ok = 0;
+  for (const it of vc) {
+    const cp = commonPeople(it.question, g);
+    const inAll = cp.people.some((p) => p.name === it.needPerson && p.acted !== false);
+    const said = inAll;                      // 시스템의 판단
+    const truth = it.claimTrue as boolean;   // 실제
+    if (said === truth) ok++;
+    else L(`    ❌ ${it.id} ${it.needPerson} — 실제 ${truth ? "맞다" : "아니다"} / 시스템 ${said ? "맞다" : "아니다"}`);
+  }
+  L(`    ${ok}/${vc.length} 정확`);
+}
+
 const na = rows.filter((r) => r.kind === "no-answer");
 if (na.length) {
   L("\n  [ 전제가 사실이 아닌 문항 — '그런 배우는 없습니다' 가 정답 ]");
