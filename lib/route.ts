@@ -296,6 +296,36 @@ export function seedsFromPerson(question: string, g: MovieGraph, top = 4): strin
  * 맞아 버렸다 (Paul, Paula, Paul Brodie, Paul Doyle …). "영화" 는 `Myeong-hwa`
  * 와 맞았다. 느슨한 대조는 이런 식으로 조용히 망가진다.
  */
+/**
+ * 용언 활용형에서는 배역 후보를 뽑지 않는다.
+ *
+ * 실측 — "호랑이가 **나오고** 포수와 대결하는 영화":
+ *   나오고 → na·o·go ,  Naoko → na·o·ko
+ *   배역명 표기가 표준을 안 따라서 넣은 k→g 퍼지 규칙에 걸려 같은 이름이 됐다.
+ *   《바람이 분다》Naoko Satomi · 《경성학교》Naoko Oyama 가 씨앗으로 들어왔다.
+ *
+ * "몇 편에 걸치면 흔한 말" 규칙으로는 못 잡는다 — '나오고' 는 2편뿐이다.
+ * 걸러야 할 것은 빈도가 아니라 **품사**다.
+ *
+ * 이름으로 끝날 수 있는 꼬리(서·지·나·은…)는 **일부러 뺐다.**
+ * 넣으면 은서·민지·유나·지은이 전부 날아간다. 이름에 안 쓰이는 어미만 담는다.
+ */
+const VERB_TAILS = [
+  "면서", "지만", "는데", "다가", "거나", "려고", "도록", "하는", "하고", "하며",
+  "되는", "되고", "어서", "아서", "았다", "었다", "한다", "인가", "일까", "인지",
+  "고", "며",
+];
+// 두 글자 이름(마고·나라…)이 꼬리와 겹쳐 날아가지 않게 세 글자부터 본다
+const isConjugated = (w: string) => w.length >= 3 && VERB_TAILS.some((t) => w.endsWith(t));
+
+/**
+ * 질문이 배역을 묻고 있는가. '지역·역사·통역' 의 역은 걸리지 않게 앞 글자를 본다.
+ * 평가셋 character 22문항 중 21문항이 걸린다 (나머지 하나는 제목이 지목된
+ * 감독 질문이라 작품 범위로 좁히는 분기로 간다).
+ */
+const ASKS_CHARACTER =
+  /(?<![지사구통번영])역할?(을|은|는|이|가|의|으로)?($|[\s?!.,])|연기|분한|맡은|맡았|열연|배역/;
+
 const NOT_A_CHARACTER = new Set([
   "영화", "배우", "누구", "누구인", "누구인가", "누구인가요", "무엇", "무엇인",
   "역을", "역할", "역할을", "맡은", "맡았", "연기", "연기한", "출연", "출연한",
@@ -313,6 +343,7 @@ export function seedsFromCharacter(question: string, g: MovieGraph, top = 3): st
   const cands = new Set<string>();
   for (const raw of question.split(/\s+/)) {
     const w = (raw.match(/[가-힣]{2,7}/) ?? [""])[0];
+    if (isConjugated(w)) continue;   // 나오고 · 대결하는 — 사람 이름이 아니다
     for (const c of [w, w.slice(0, w.length - 1), w.slice(0, w.length - 2)]) {
       if (c.length >= 2 && !NOT_A_CHARACTER.has(c)) cands.add(c);
     }
@@ -338,6 +369,16 @@ export function seedsFromCharacter(question: string, g: MovieGraph, top = 3): st
       return [...new Set(hits.sort((a, b) => b.len - a.len).map((x) => x.id))].slice(0, top);
     }
   }
+
+  /**
+   * 작품이 지목되지 않았다면, **질문이 배역을 묻고 있을 때만** 전역으로 훑는다.
+   *
+   * 말뭉치에 배역명이 4,022개 있다. 두세 글자 한글 덩어리를 로마자로 바꿔
+   * 전부와 대조하면 **우연히 겹치는 것이 거의 언제나 나온다.** 줄거리를
+   * 묘사하는 질문에는 배역명이 애초에 들어 있지 않으므로, 여기서 나오는
+   * 것은 전부 오인이고 진짜 씨앗(키워드)을 앞자리에서 밀어낸다.
+   */
+  if (!ASKS_CHARACTER.test(question)) return [];
 
   const scored: { id: string; len: number; pop: number; rare: number }[] = [];
   const perCand = new Map<string, number>();
@@ -466,6 +507,7 @@ export function seedsFromCharacterActor(question: string, g: MovieGraph, top = 8
   const cands = new Set<string>();
   for (const raw of question.split(/\s+/)) {
     const w = (raw.match(/[가-힣]{2,7}/) ?? [""])[0];
+    if (isConjugated(w)) continue;
     for (const c of [w, w.slice(0, -1), w.slice(0, -2)]) {
       if (c.length >= 2 && !NOT_A_CHARACTER.has(c)) cands.add(c);
     }
