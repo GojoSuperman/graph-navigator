@@ -25,7 +25,7 @@ const UA = { "User-Agent": "movie-navigator/0.1 (portfolio study project)" };
 const raw = JSON.parse(await readFile(join(DATA, "raw.json"), "utf-8"));
 const ids: string[] = raw.movies.map((m: any) => String(m.id));
 /** 인물 수상도 받는다 — "전도연이 칸 여우주연상을 받은 영화는?" 은 **인물**의 상이다 */
-const names: string[] = [...new Set(raw.people.map((p: any) => String(p.name)))].filter((n) => /[가-힣]/.test(n));
+const names: string[] = [...new Set<string>(raw.people.map((p: any) => String(p.name)))].filter((n: string) => /[가-힣]/.test(n));
 
 async function sparql(q: string, ms = 60000): Promise<any[]> {
   const c = new AbortController();

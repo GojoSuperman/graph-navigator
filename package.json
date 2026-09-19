@@ -2,12 +2,30 @@
   "name": "movie-navigator",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "test": "node --test \"test/*.test.ts\"",
     "fetch": "node scripts/fetch-movies.ts",
+    "awards": "node scripts/fetch-awards.ts",
     "graph": "node scripts/build-graph.ts",
-    "eval": "node scripts/evaluate.ts"
+    "eval": "node scripts/evaluate.ts",
+    "ask": "node scripts/ask.ts"
   },
-  "packageManager": "pnpm@11.5.0"
+  "packageManager": "pnpm@11.5.0",
+  "dependencies": {
+    "next": "^16.3.5",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^7.0.2"
+  }
 }
