@@ -539,8 +539,26 @@ export function seedsFromGenre(question: string, g: MovieGraph, top = 3): string
   return genre ? (g.genreIndex[genre] ?? []).slice(0, top) : [];
 }
 
+/**
+ * 질문을 감싸는 상투어. BM25 에 넣기 전에 걷어낸다.
+ *
+ * 실측 — "세종대왕에 대한 **이야기가있는 영화 알려줘**":
+ *   《천문: 하늘에 묻는다》가 6위로 밀려 씨앗(상위 3)에서 떨어졌다.
+ *   '이야기' 가 《무서운 이야기 2》·《라푼젤: 끝나지 않은 이야기》를 끌어올렸기 때문이다.
+ *   걷어내면 천문이 2위로 올라온다.
+ *
+ * IDF 가 흔한 말을 깎아 주지만, **묻는 방식에서 온 말**까지는 깎지 못한다.
+ * 이것들은 문서에 있을 수도 있는 진짜 낱말이라 색인에서는 빼지 않는다 —
+ * 《무서운 이야기》는 제목이다. **질문 쪽에서만** 뺀다.
+ */
+const QUERY_FILLER =
+  /(알려줘|알려주세요|추천해줘|추천|말해줘|보여줘|찾아줘|무엇인가요|무엇인지|뭐야|뭔가요|어떤거지|어떤가요|있나요|있어|없어)|(영화|작품|이야기|내용|줄거리|관련된|관련|대한|대해|에서|나오는|나온|있는|같은)/g;
+
 export function seedsFromKeywords(question: string, g: MovieGraph, top = 3): string[] {
-  return indexOf(g).search(question, top).map((r) => r.id);
+  const lean = question.replace(QUERY_FILLER, " ").replace(/\s+/g, " ").trim();
+  // 상투어뿐인 질문이면 원문을 쓴다 — 빈 질의로 검색하면 아무 근거나 올라온다
+  const q = lean.replace(/[^가-힣0-9A-Za-z]/g, "").length >= 2 ? lean : question;
+  return indexOf(g).search(q, top).map((r) => r.id);
 }
 
 /**
@@ -640,7 +658,15 @@ export function findSeeds(question: string, g: MovieGraph, top = 3): string[] {
       ...chars,
       ...people,
       ...seedsFromGenre(question, g),
-      ...seedsFromKeywords(question, g, top),
+      /**
+       * 키워드 씨앗만 **두 배로** 가져온다.
+       *
+       * 여기까지 왔다는 것은 제목·인물·수상 같은 확실한 단서가 하나도 없다는 뜻이다.
+       * 그런 질문일수록 BM25 순위가 흔들린다 — 실측에서 《천문》이 2위였다가
+       * 상투어 하나에 6위로 밀렸다. 확실한 단서가 없을 때 상위 3개만 보는 것은
+       * **순위를 너무 믿는 것**이다. 근거 예산이 10편이므로 6개는 감당한다.
+       */
+      ...seedsFromKeywords(question, g, top * 2),
     ]),
   ];
 }
