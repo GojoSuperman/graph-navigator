@@ -100,7 +100,12 @@ const BRIDGE: EvidencePlan = { primary: ["ACTED_IN", "DIRECTED"], exempt: ["DIRE
 
 export const ROUTE_PLAN: Record<Route, EvidencePlan> = {
   lookup: { primary: ["DIRECTED", "ACTED_IN"], exempt: ["DIRECTED"] },
-  filmography: { primary: ["DIRECTED", "ACTED_IN"], exempt: ["DIRECTED", "ACTED_IN"] },
+  /**
+   * "X 가 나온 영화" 의 답은 **정확히 X 의 작품**이다. 밖으로 나가면 답이 아니다.
+   * 실측 — 《브로커》에서 감독(고레에다 히로카즈)을 타고 《아무도 모른다》·《공기인형》
+   * 같은 그의 다른 영화가 근거에 섞였다. 아이유와 무관하다.
+   */
+  filmography: { primary: [], exempt: [] },
   bridge: BRIDGE,
   similar: { primary: ["ACTED_IN", "DIRECTED"], exempt: [] },
   award: { primary: ["ACTED_IN", "DIRECTED"], exempt: ["DIRECTED"] },

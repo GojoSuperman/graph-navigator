@@ -13,9 +13,12 @@ export const runtime = "nodejs";
 export async function POST(req: Request) {
   let question = "";
   let previous: { question: string; movieIds: string[] } | undefined;
+  /** 쓰는 사람이 가져온 키 — 저장하지 않고 이 요청에서만 쓴다 */
+  let apiKey = "";
   try {
-    const body = (await req.json()) as { question?: unknown; previous?: unknown };
+    const body = (await req.json()) as { question?: unknown; previous?: unknown; apiKey?: unknown };
     question = String(body.question ?? "").trim();
+    apiKey = String(body.apiKey ?? "").trim();
     const pv = body.previous as { question?: string; movieIds?: string[] } | undefined;
     if (pv?.question && Array.isArray(pv.movieIds) && pv.movieIds.length) {
       previous = { question: String(pv.question), movieIds: pv.movieIds.map(String).slice(0, 30) };
@@ -29,7 +32,7 @@ export async function POST(req: Request) {
   const result = ask(g, question, previous);
 
   // 왜 답변 문장이 없는지 숨기지 않는다 — 비어 있는 것과 고장난 것을 구분할 수 있어야 한다.
-  const a = await generateAnswer(result);
+  const a = await generateAnswer(result, apiKey);
 
   return Response.json({
     ...result,

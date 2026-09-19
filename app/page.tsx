@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { VIZ_EVENT } from "./VizDock.tsx";
+import { storedKey } from "./Settings.tsx";
 import type { AskResult, EvidenceMovie, PathStep } from "@/lib/ask.ts";
 
 type Payload = AskResult & { answer: string | null; llm: { enabled: boolean; reason: string; model?: string } };
@@ -93,6 +94,8 @@ export default function Home() {
         // 직전 결과를 함께 보낸다 — "그중에" 가 무엇을 가리키는지 서버가 알아야 한다
         body: JSON.stringify({
           question: text,
+          // 브라우저에 저장된 키를 이 요청에만 실어 보낸다
+          apiKey: storedKey(),
           previous: res && res.evidence.length
             ? { question: res.question, movieIds: res.evidence.map((e) => e.id) }
             : undefined,

@@ -270,10 +270,9 @@ export function commonPeople(question: string, g: MovieGraph, top = 5) {
 
 /** 질문에 인물 이름이 있으면 그 사람의 대표작을 씨앗으로 준다 */
 export function seedsFromPerson(question: string, g: MovieGraph, top = 4): string[] {
-  const q = norm(question);
-  const hits = [...g.people.values()]
-    .filter((p) => p.name.length >= 2 && mentions(question, p.name))
-    .sort((a, b) => b.name.length - a.name.length || b.popularity - a.popularity);
+  // peopleIn 을 그대로 쓴다. 같은 판정을 두 곳에 두면 한쪽만 고쳐져 어긋난다 —
+  // 실제로 별칭을 peopleIn 에만 넣었다가 "아이유가 나온 영화" 가 여전히 엉뚱했다.
+  const hits = peopleIn(question, g);
   if (!hits.length) return [];
   const films = g.filmsOf(hits[0].id)
     .map((e) => g.movie(e.to))
@@ -402,8 +401,7 @@ export function seedsFromPersonAward(question: string, g: MovieGraph, top = 4): 
   if (!named.length) return [];
 
   const out: string[] = [];
-  for (const p of g.people.values()) {
-    if (p.name.length < 2 || !mentions(question, p.name)) continue;
+  for (const p of peopleIn(question, g)) {
     for (const a of p.awards ?? []) {
       if (!named.some((k) => norm(a.award).includes(norm(k)))) continue;
       if (!a.forTmdb) continue;
@@ -562,6 +560,18 @@ export function findSeeds(question: string, g: MovieGraph, top = 3): string[] {
   // 배역 → 배우 → 다른 작품. 가장 좁은 단서이므로 잡히면 그것만 쓴다.
   const viaActor = seedsFromCharacterActor(question, g);
   if (viaActor.length) return viaActor;
+
+  /**
+   * 인물의 작품을 묻는데 그 사람이 특정됐으면 **그 사람의 작품만** 쓴다.
+   * BM25 를 함께 부르면 글자만 겹치는 잡음이 씨앗에 섞인다 — 실측에서
+   * "아이유가 나온 영화" 에 《나쁜 영화》·《아이 캔 스피크》·《헨젤과 그레텔》이
+   * 들어왔다. 물은 사람은 하나인데 답이 여섯 곳에서 나오면 답이 아니다.
+   */
+  const r = route(question);
+  if (r.route === "filmography" || r.route === "cast") {
+    const only = seedsFromPerson(question, g, 12);
+    if (only.length) return only;
+  }
 
   const titles = seedsFromTitle(question, g);
   const people = seedsFromPerson(question, g);

@@ -37,6 +37,17 @@ const SYSTEM = `너는 영화 정보를 **주어진 근거만으로** 답하는 
 function evidenceBlock(r: AskResult): string {
   const lines: string[] = [];
 
+  /**
+   * 별칭을 먼저 알려 준다. TMDB 는 인물을 활동명으로 저장하므로,
+   * "돈 리가 나온 영화" 를 물었는데 근거에는 **마동석**으로 적혀 있다.
+   * 이 줄이 없으면 모델이 동일인임을 모르고 "확인되지 않습니다" 라고 답한다.
+   */
+  const withAlias = r.matchedPeople.filter((p) => p.aliases.length);
+  if (withAlias.length) {
+    lines.push("[같은 사람의 다른 이름]");
+    for (const p of withAlias) lines.push(`- ${p.name} = ${p.aliases.join(" = ")}`);
+  }
+
   if (r.cast.length) {
     lines.push("[출연·제작진]");
     for (const c of r.cast) lines.push(`- ${c.name} (${c.role}${c.as ? `, ${c.as} 역` : ""})`);
@@ -71,11 +82,25 @@ function evidenceBlock(r: AskResult): string {
   return lines.join("\n");
 }
 
-export async function generateAnswer(r: AskResult): Promise<AnswerResult> {
+/**
+ * @param userKey 쓰는 사람이 가져온 키. 배포본에서는 이것만 쓴다.
+ *   서버 키(OPENAI_API_KEY)는 로컬 개발용 폴백이다 —
+ *   공개된 서버가 제 키로 모델을 돌리면 남의 지갑이 열린다.
+ */
+export async function generateAnswer(r: AskResult, userKey?: string): Promise<AnswerResult> {
   // ── 코드 층 ────────────────────────────────────────────────────────
   if (r.refused) return { text: null, reason: "근거가 없어 호출하지 않았습니다" };
   if (r.premiseBroken) return { text: null, reason: "질문의 전제가 사실이 아니라 호출하지 않았습니다" };
-  if (!process.env.OPENAI_API_KEY) return { text: null, reason: "OPENAI_API_KEY 가 없어 근거만 표시합니다" };
+  /**
+   * 배포본에서는 **쓰는 사람의 키만** 쓴다.
+   * 서버 키를 폴백으로 두면 공개된 순간 남의 지갑으로 모델이 돌아간다.
+   * 로컬 개발에서만 .env.local 의 키로 떨어진다.
+   */
+  const fallback = process.env.NODE_ENV === "production" ? undefined : process.env.OPENAI_API_KEY;
+  const key = (userKey ?? "").trim() || fallback;
+  if (!key) {
+    return { text: null, reason: "OpenAI 키가 없어 근거만 표시합니다 — 상단 ‘설정’에서 넣을 수 있습니다" };
+  }
 
   const evidence = evidenceBlock(r);
   if (!evidence.trim()) return { text: null, reason: "모아 온 근거가 비어 있습니다" };
@@ -85,7 +110,7 @@ export async function generateAnswer(r: AskResult): Promise<AnswerResult> {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        authorization: `Bearer ${key}`,
       },
       body: JSON.stringify({
         model: MODEL,
@@ -105,7 +130,11 @@ export async function generateAnswer(r: AskResult): Promise<AnswerResult> {
     });
     if (!res.ok) {
       const body = await res.text();
-      return { text: null, reason: `LLM 호출 실패 (HTTP ${res.status}) — ${body.slice(0, 120)}` };
+      // 오류 본문에 키가 섞여 나올 수 있다. 상태 코드와 사유만 전한다.
+      const why = res.status === 401 ? "키가 올바르지 않습니다"
+        : res.status === 429 ? "사용량 한도에 걸렸습니다"
+        : body.slice(0, 80).replace(/sk-[A-Za-z0-9_-]+/g, "sk-***");
+      return { text: null, reason: `LLM 호출 실패 (HTTP ${res.status}) — ${why}` };
     }
     const j = await res.json();
     const text = j.choices?.[0]?.message?.content?.trim() ?? "";

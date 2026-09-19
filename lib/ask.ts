@@ -56,6 +56,8 @@ export interface AskResult {
   commonMovies: { id: string; title: string; year: number | null }[];
   /** 출연진 — "이 영화에 누가 나와?" 의 답. 사람 목록이다 */
   cast: { id: string; name: string; as: string | null; role: "출연" | "감독" | "각본" }[];
+  /** 질문이 가리킨 인물 — 별칭으로 찾았으면 실제 이름이 다를 수 있다 */
+  matchedPeople: { name: string; aliases: string[] }[];
   /** 질문에 이름이 나온 사람의 수상 */
   personAwards: { person: string; award: string; year: number | null; forTitle: string | null }[];
   evidence: EvidenceMovie[];
@@ -155,6 +157,7 @@ export function ask(g: MovieGraph, question: string, previous?: Previous): AskRe
       premiseInstead: null,
       seeds: [],
       cast: [],
+      matchedPeople: [],
       characters: [],
       commonPeople: [],
       commonMovies: [],
@@ -189,7 +192,7 @@ function askFresh(g: MovieGraph, question: string, gaveUp: string | null): AskRe
     return {
       ...base, refused: true, refusalReason: r.reason,
       premiseBroken: false, premiseReason: null, premiseInstead: null,
-      cast: [], characters: [], commonPeople: [], commonMovies: [], personAwards: [],
+      cast: [], matchedPeople: [], characters: [], commonPeople: [], commonMovies: [], personAwards: [],
       evidence: [], dropped: 0, followUp: null, followUpGaveUp: gaveUp,
     };
   }
@@ -253,8 +256,9 @@ function askFresh(g: MovieGraph, question: string, gaveUp: string | null): AskRe
     : [];
 
   const personAwards: AskResult["personAwards"] = [];
-  for (const p of g.people.values()) {
-    if (p.name.length < 2 || !mentions(question, p.name) || !p.awards?.length) continue;
+  // peopleIn 을 쓴다 — 별칭 판정이 여기만 빠지면 "아이유 수상" 이 안 잡힌다
+  for (const p of peopleIn(question, g)) {
+    if (!p.awards?.length) continue;
     for (const a of p.awards.filter((x) => x.forTitle).slice(0, 6)) {
       personAwards.push({ person: p.name, award: a.award, year: a.year, forTitle: a.forTitle });
     }
@@ -268,6 +272,7 @@ function askFresh(g: MovieGraph, question: string, gaveUp: string | null): AskRe
     premiseReason: premise.broken ? premise.reason : null,
     premiseInstead: premise.instead ?? null,
     cast,
+    matchedPeople: ps.map((p) => ({ name: p.name, aliases: p.aliases ?? [] })),
     characters: [...new Map(characters.map((c) => [`${c.person}|${c.movie}`, c])).values()].slice(0, 6),
     commonPeople: cp.people.map((p) => ({ name: p.name, acted: p.acted !== false })),
     commonMovies: shared,
