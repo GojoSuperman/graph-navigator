@@ -8,7 +8,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { MovieGraph, collectEvidence, DEFAULT_BUDGET, describePath } from "../lib/graph.ts";
-import { route, findSeeds, canAnswer, seedsFromCharacter } from "../lib/route.ts";
+import { route, findSeeds, canAnswer, seedsFromCharacter, commonPeople, peopleIn, titlesIn, seedsFromPeopleIntersection, mentions } from "../lib/route.ts";
 import { nameMatches } from "../lib/romanize.ts";
 
 const q = process.argv.slice(2).join(" ").trim();
@@ -50,6 +50,34 @@ for (const m of got.movies) {
     }
   }
 }
+// ── 교집합 답 ──────────────────────────────────────────────────────
+const cp = commonPeople(q, g);
+if (cp.people.length) {
+  L(`${titlesIn(q, g).slice(0, 4).map((m) => `《${m.title}》`).join(" ")} 에 모두 참여:`);
+  for (const p of cp.people) L(`  ▶ ${p.name}${p.acted === false ? " (출연 아님 — 제작진)" : ""}`);
+  L();
+}
+// 인물 교집합 — 탐색 결과가 아니라 **실제로 겹치는 작품**만 보여 준다
+const ps = peopleIn(q, g);
+if (ps.length >= 2) {
+  const shared = seedsFromPeopleIntersection(q, g, 6).map((id) => g.movie(id)!).filter(Boolean);
+  if (shared.length) {
+    L(`${ps.slice(0, 3).map((p) => p.name).join(" · ")} 가 함께 나온 작품:`);
+    for (const m of shared) L(`  ▶ 《${m.title}》${m.year ? ` (${m.year})` : ""}`);
+    L();
+  }
+}
+
+// 인물 수상 — 질문에 이름이 있으면 그 사람이 받은 상도 보여 준다
+for (const p of g.people.values()) {
+  if (p.name.length < 2 || !mentions(q, p.name) || !p.awards?.length) continue;
+  const withWork = p.awards.filter((a: any) => a.forTitle);
+  if (!withWork.length) continue;
+  L(`${p.name} 수상:`);
+  for (const a of withWork.slice(0, 6)) L(`  🏆 ${a.award}${a.year ? ` (${a.year})` : ""} — 《${a.forTitle}》`);
+  L();
+}
+
 if (found.length) {
   L("찾은 배역:");
   for (const f of [...new Set(found)].slice(0, 5)) L(f);
@@ -65,6 +93,9 @@ for (const m of got.movies) {
   L(`      ${m.genres.join(" · ")}`);
   if (path.length) L(`      경로: ${describePath(g, path)}`);
   else L(`      경로: (씨앗)`);
+  if (m.awards?.length) {
+    L(`      🏆 ${m.awards.slice(0, 4).map((a) => `${a.award}${a.year ? ` (${a.year})` : ""}`).join(" · ")}`);
+  }
   L(`      ${m.overview.replace(/\s+/g, " ").slice(0, 80)}…`);
   L();
 }

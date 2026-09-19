@@ -31,6 +31,12 @@ export interface Movie {
   voteCount: number;
   /** 시리즈(컬렉션) 소속 — 《범죄도시》 같은 것 */
   collection: number | null;
+  /**
+   * 수상 기록. TMDB 에는 없어서 위키데이터에서 따로 받는다.
+   * 결합은 제목이 아니라 **TMDB ID(P4947)** 로 한다 — 《괴물》 같은 동명이작에서
+   * 제목 대조는 조용히 틀린다.
+   */
+  awards?: { award: string; year: number | null }[];
 }
 
 export interface Person {
@@ -41,6 +47,12 @@ export interface Person {
   /** 주 분야 — Acting / Directing … */
   department: string;
   popularity: number;
+  /**
+   * 이 사람이 받은 상. **영화가 받은 상과 다르다** —
+   * 《밀양》의 수상 기록에는 "칸 여우주연상" 이 없다. 그건 전도연이 받은 상이다.
+   * 수상 자격에 작품이 달려 있어 forTmdb 로 우리 그래프와 이어진다.
+   */
+  awards?: { award: string; year: number | null; forTmdb: string | null; forTitle: string | null }[];
 }
 
 export interface Collection {
@@ -87,6 +99,7 @@ export type Route =
   | "filmography"   // 인물 → 작품 목록
   | "bridge"        // ★ 작품 → 인물 → 다른 작품 (2홉 이상)
   | "similar"       // 장르·시리즈 기반 추천
+  | "award"         // 수상 — 근거가 줄거리가 아니라 수상 기록이다
   | "out_of_scope"; // 예매·스트리밍·평점 예측 등 — 답하지 않는다
 
 export interface GraphData {

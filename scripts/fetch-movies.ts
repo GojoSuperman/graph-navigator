@@ -87,7 +87,10 @@ async function loadCredits(ids: number[]) {
   for (const id of ids) {
     const c = await api(`/movie/${id}/credits`);
     credits.set(id, c);
-    const cast = (c.cast ?? []).slice(0, 10);
+    // 상위 10명만 담았다가 교집합 질문에서 정답을 통째로 날렸다 —
+    // 《곡성》의 김윤석이 10위 밖이라 "추격자·황해·곡성에 모두 나온 배우" 가 안 나왔다.
+    // 조연까지 담아야 관계가 제대로 생긴다.
+    const cast = (c.cast ?? []).slice(0, 30);
     const crew = (c.crew ?? []).filter((x: any) => x.job === "Director" || x.job === "Screenplay" || x.job === "Writer");
     for (const x of [...cast, ...crew]) {
       if (!people.has(x.id)) {
@@ -137,7 +140,7 @@ const raw = {
   params: { PAGES, MIN_VOTES, EXPAND_MIN_FILMS, EXPAND_MIN_VOTES },
   genres: Object.fromEntries(GENRE),
   movies: [...movies.values()],
-  credits: Object.fromEntries([...credits.entries()].map(([k, v]) => [k, { cast: (v.cast ?? []).slice(0, 10), crew: (v.crew ?? []).filter((x: any) => ["Director", "Screenplay", "Writer"].includes(x.job)) }])),
+  credits: Object.fromEntries([...credits.entries()].map(([k, v]) => [k, { cast: (v.cast ?? []).slice(0, 30), crew: (v.crew ?? []).filter((x: any) => ["Director", "Screenplay", "Writer"].includes(x.job)) }])),
   people: [...people.values()],
 };
 await writeFile(join(OUT, "raw.json"), JSON.stringify(raw), "utf-8");

@@ -103,6 +103,7 @@ export const ROUTE_PLAN: Record<Route, EvidencePlan> = {
   filmography: { primary: ["DIRECTED", "ACTED_IN"], exempt: ["DIRECTED", "ACTED_IN"] },
   bridge: BRIDGE,
   similar: { primary: ["ACTED_IN", "DIRECTED"], exempt: [] },
+  award: { primary: ["ACTED_IN", "DIRECTED"], exempt: ["DIRECTED"] },
   out_of_scope: { primary: [], exempt: [] },
 };
 

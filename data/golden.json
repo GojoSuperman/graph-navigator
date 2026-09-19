@@ -1,0 +1,495 @@
+{
+  "name": "movie-navigator-goldenset",
+  "version": "0.3",
+  "created": "2026-09-19",
+  "note": "문항은 **사용자가 직접 썼다.** 이것이 law-navigator 와 다른 점이고, 이 프로젝트를 영화로 옮긴 이유다 — 만든 사람이 정답을 판단할 수 있어야 측정을 믿을 수 있다. 재는 것은 답변 정확도가 아니라 '정답에 필요한 근거를 데려왔는가'(컨텍스트 재현율)다. LLM 없이 계산되므로 비용이 0이다.",
+  "kinds": {
+    "character": "배역명으로 배우를 묻는다 — 줄거리 텍스트에 배우도 배역도 없으므로 크레딧을 건너야만 답이 된다",
+    "filmography": "인물 → 작품. 한 홉이면 닿는다",
+    "bridge": "두 인물의 공통 작품, 또는 작품 → 인물 → 다른 작품. 여러 홉을 건너야 한다",
+    "award": "수상 정보를 묻는다 — TMDB 에 없어 위키데이터를 별도로 붙였다",
+    "out_of_scope": "예매·스트리밍 위치 등 조회로 답할 수 없다. 답하지 않는 것이 정답이다",
+    "content": "줄거리 내용으로 작품을 찾는다 — 답이 한 문서 안에 있으므로 **그래프가 도울 일이 없다.** 벡터 검색이 이기는 자리",
+    "ranking": "인기·최신 순위를 묻는다 — 검색이 아니라 정렬이다",
+    "intersect-movie": "인물 둘 이상의 공통 출연작을 묻는다 — 답은 영화",
+    "intersect-person": "작품 둘 이상의 공통 참여자를 묻는다 — 답은 사람"
+  },
+  "splits": {
+    "user-v1": "사용자가 말뭉치를 보지 않고 쓴 20문항. 'GraphRAG 에 적합할 것 같은 질문' 으로 요청했으므로 유형이 한쪽으로 치우쳐 있다(배역 질문이 많다). 그 편향을 그대로 기록해 둔다.",
+    "user-v0": "사용자가 **아무 안내 없이** 처음 던진 3문항. 'GraphRAG 에 맞는 질문을 달라'고 하기 전이라 실제 사용 양상에 가장 가깝다. 셋 다 지금 시스템이 틀렸고, 더 나쁘게는 거절하지 않았다 (셋 다 《지옥이 뭐가 나빠》를 1등으로 내놓았다 — 그 영화 줄거리에 '영화'가 7번 나오기 때문). **이 묶음은 성능이 아니라 방향을 재는 용도다.**",
+    "author-oos": "거절을 재려고 작성자가 추가한 문항. 사용자 문항에 거절 사례가 하나도 없었다 — 재지 않으면 고장 나 있어도 100%로 보인다(law-navigator 의 교훈).",
+    "user-v2": "사용자가 쓴 bridge 전용 20문항. v1 이 배역 질문으로 치우친 것을 보고 **교집합 질문**을 따로 요청해 받았다. 두 패턴이다 — ①인물 교집합(A와 B가 함께 나온 영화) ②작품 교집합(A·B·C에 모두 나온 배우). 둘 다 BM25 가 **원리적으로** 못 푼다: 영화 줄거리에 배우 이름이 없고, 배우는 어느 문서에도 통째로 들어 있지 않다. 한쪽만 봐서는 교집합을 구할 수 없다."
+  },
+  "items": [
+    {
+      "id": "u01",
+      "kind": "character",
+      "question": "영화 ‘기생충’에서 기택 역을 맡은 배우는 누구인가요?",
+      "answer": "송강호",
+      "needMovie": "기생충",
+      "needPerson": "송강호",
+      "split": "user-v1",
+      "note": ""
+    },
+    {
+      "id": "u02",
+      "kind": "award",
+      "question": "배우 송강호가 출연한 영화 중 칸 영화제 황금종려상을 받은 작품은 무엇인가요?",
+      "answer": "기생충",
+      "needMovie": "기생충",
+      "needPerson": "송강호",
+      "split": "user-v1",
+      "note": "인물→작품→수상. 두 출처를 건너야 한다"
+    },
+    {
+      "id": "u03",
+      "kind": "character",
+      "question": "영화 ‘범죄도시’ 시리즈에서 마석도 형사를 연기한 배우는 누구인가요?",
+      "answer": "마동석",
+      "needMovie": "범죄도시 2",
+      "needPerson": "마동석",
+      "split": "user-v1",
+      "note": "시리즈 — 어느 편이어도 정답"
+    },
+    {
+      "id": "u04",
+      "kind": "filmography",
+      "question": "배우 이병헌이 광해군과 하선, 1인 2역을 맡은 영화 제목은 무엇인가요?",
+      "answer": "광해, 왕이 된 남자",
+      "needMovie": "광해, 왕이 된 남자",
+      "needPerson": "이병헌",
+      "split": "user-v1",
+      "note": ""
+    },
+    {
+      "id": "u05",
+      "kind": "character",
+      "question": "영화 ‘택시운전사’에서 독일 기자 피터를 연기한 배우는 누구인가요?",
+      "answer": "토마스 크레치만",
+      "needMovie": "택시운전사",
+      "needPerson": "토마스 크레치만",
+      "split": "user-v1",
+      "note": "극중 호칭 '피터' vs 데이터 'Jürgen Hinzpeter' — 배역명이 어긋난다"
+    },
+    {
+      "id": "u06",
+      "kind": "character",
+      "question": "배우 최민식이 주인공 오대수를 맡은 영화는 무엇인가요?",
+      "answer": "올드보이",
+      "needMovie": "올드보이",
+      "needPerson": "최민식",
+      "split": "user-v1",
+      "note": ""
+    },
+    {
+      "id": "u07",
+      "kind": "character",
+      "question": "영화 ‘괴물’에서 강두 역을 연기한 배우는 누구인가요?",
+      "answer": "송강호",
+      "needMovie": "괴물",
+      "needPerson": "송강호",
+      "split": "user-v1",
+      "note": "《괴물》 동명이작 주의"
+    },
+    {
+      "id": "u08",
+      "kind": "award",
+      "question": "배우 전도연이 칸 영화제 여우주연상을 받은 영화 제목은 무엇인가요?",
+      "answer": "밀양",
+      "needMovie": "밀양",
+      "needPerson": "전도연",
+      "split": "user-v1",
+      "note": ""
+    },
+    {
+      "id": "u09",
+      "kind": "character",
+      "question": "영화 ‘신세계’에서 이자성 역을 맡은 배우는 누구인가요?",
+      "answer": "이정재",
+      "needMovie": "신세계",
+      "needPerson": "이정재",
+      "split": "user-v1",
+      "note": "자성 → Ja-sung (표기법이면 Ja-seong)"
+    },
+    {
+      "id": "u10",
+      "kind": "filmography",
+      "question": "배우 황정민이 북한 공작원 표종성을 연기한 영화는 무엇인가요?",
+      "answer": "베를린",
+      "needMovie": "베를린",
+      "needPerson": "황정민",
+      "split": "user-v1",
+      "note": ""
+    },
+    {
+      "id": "u11",
+      "kind": "character",
+      "question": "영화 ‘베테랑’에서 악역 조태오를 연기한 배우는 누구인가요?",
+      "answer": "유아인",
+      "needMovie": "베테랑",
+      "needPerson": "유아인",
+      "split": "user-v1",
+      "note": ""
+    },
+    {
+      "id": "u12",
+      "kind": "bridge",
+      "question": "배우 손예진과 현빈이 함께 주연으로 출연한 영화는 무엇인가요?",
+      "answer": "협상",
+      "needMovie": "협상",
+      "needPerson": "손예진",
+      "split": "user-v1",
+      "note": "★두 인물의 공통 작품 — 진짜 2홉"
+    },
+    {
+      "id": "u13",
+      "kind": "character",
+      "question": "영화 ‘아가씨’에서 히데코 아가씨 역을 맡은 배우는 누구인가요?",
+      "answer": "김민희",
+      "needMovie": "아가씨",
+      "needPerson": "김민희",
+      "split": "user-v1",
+      "note": ""
+    },
+    {
+      "id": "u14",
+      "kind": "filmography",
+      "question": "배우 공유가 도깨비가 아니라 좀비 재난 영화에서 주연을 맡은 작품은 무엇인가요?",
+      "answer": "부산행",
+      "needMovie": "부산행",
+      "needPerson": "공유",
+      "split": "user-v1",
+      "note": "부정문 — '도깨비가 아니라'"
+    },
+    {
+      "id": "u15",
+      "kind": "character",
+      "question": "영화 ‘밀정’에서 의열단 리더 김우진 역을 맡은 배우는 누구인가요?",
+      "answer": "공유",
+      "needMovie": "밀정",
+      "needPerson": "공유",
+      "split": "user-v1",
+      "note": ""
+    },
+    {
+      "id": "u16",
+      "kind": "bridge",
+      "question": "배우 마동석이 출연한 영화 ‘이터널스’ 이전, 한국형 좀비 액션 영화 제목은 무엇인가요?",
+      "answer": "부산행",
+      "needMovie": "부산행",
+      "needPerson": "마동석",
+      "split": "user-v1",
+      "note": "★이터널스 → 마동석 → 부산행. 국경을 넘는 다리"
+    },
+    {
+      "id": "u17",
+      "kind": "character",
+      "question": "영화 ‘1987’에서 박종철 열사의 고문치사 사건을 파헤치는 검사 역을 맡은 배우는 누구인가요?",
+      "answer": "하정우",
+      "needMovie": "1987",
+      "needPerson": "하정우",
+      "split": "user-v1",
+      "note": ""
+    },
+    {
+      "id": "u18",
+      "kind": "filmography",
+      "question": "배우 김혜수가 도둑 팀의 리더 ‘펩시’로 출연한 영화는 무엇인가요?",
+      "answer": "도둑들",
+      "needMovie": "도둑들",
+      "needPerson": "김혜수",
+      "split": "user-v1",
+      "note": "펩시 → Pepsee (외래어 배역명)"
+    },
+    {
+      "id": "u19",
+      "kind": "character",
+      "question": "영화 ‘암살’에서 저격수 안옥윤 역을 맡은 배우는 누구인가요?",
+      "answer": "전지현",
+      "needMovie": "암살",
+      "needPerson": "전지현",
+      "split": "user-v1",
+      "note": ""
+    },
+    {
+      "id": "u20",
+      "kind": "filmography",
+      "question": "배우 류승룡이 치킨집 사장으로 위장한 형사를 연기한 코미디 영화는 무엇인가요?",
+      "answer": "극한직업",
+      "needMovie": "극한직업",
+      "needPerson": "류승룡",
+      "split": "user-v1",
+      "note": ""
+    },
+    {
+      "id": "v0-1",
+      "kind": "content",
+      "question": "어린 손자와 할머니가 나오는 영화인데 손자를 향한 애정을 표현한 영화 제목과 배우들 이름이 어떻게 되지?",
+      "answer": "집으로...",
+      "needMovie": "",
+      "needPerson": "",
+      "split": "user-v0",
+      "note": "줄거리 의미 검색. 그래프가 도울 일이 없고, 애초에 《집으로...》가 말뭉치에 없다"
+    },
+    {
+      "id": "v0-2",
+      "kind": "ranking",
+      "question": "요즘 영화중 가장 핫한 영화 제목과 줄거리 알려줘",
+      "answer": "(popularity 상위)",
+      "needMovie": "",
+      "needPerson": "",
+      "split": "user-v0",
+      "note": "검색이 아니라 정렬. '요즘'은 수집 시점에 고정돼 신선도 문제도 있다"
+    },
+    {
+      "id": "v0-3",
+      "kind": "award",
+      "question": "영화제에서 상받은 영화 최근 3년치 알려줘",
+      "answer": "(수상작 목록)",
+      "needMovie": "",
+      "needPerson": "",
+      "split": "user-v0",
+      "note": "수상 데이터를 위키데이터로 붙이면 답할 수 있게 된다"
+    },
+    {
+      "id": "oos-1",
+      "kind": "out_of_scope",
+      "question": "파묘 어디서 볼 수 있어?",
+      "answer": "(거절)",
+      "needMovie": "",
+      "needPerson": "",
+      "split": "author-oos",
+      "note": "스트리밍 위치 — 조회 범위 밖"
+    },
+    {
+      "id": "oos-2",
+      "kind": "out_of_scope",
+      "question": "범죄도시 4 예매하고 싶은데 상영 시간표 알려줘",
+      "answer": "(거절)",
+      "needMovie": "",
+      "needPerson": "",
+      "split": "author-oos",
+      "note": "예매·상영시간"
+    },
+    {
+      "id": "oos-3",
+      "kind": "out_of_scope",
+      "question": "이 영화 재밌을까?",
+      "answer": "(거절)",
+      "needMovie": "",
+      "needPerson": "",
+      "split": "author-oos",
+      "note": "주관적 예측"
+    },
+    {
+      "id": "oos-4",
+      "kind": "out_of_scope",
+      "question": "김치찌개 맛있게 끓이는 법 알려줘",
+      "answer": "(거절)",
+      "needMovie": "",
+      "needPerson": "",
+      "split": "author-oos",
+      "note": "영화와 무관 — 도메인 밖"
+    },
+    {
+      "id": "w01",
+      "kind": "intersect-movie",
+      "question": "송강호와 이선균이 함께 출연한 영화는 무엇인가요?",
+      "answer": "기생충",
+      "needMovie": "기생충",
+      "needPerson": "",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w02",
+      "kind": "intersect-movie",
+      "question": "현빈과 손예진이 함께 주연을 맡은 영화는 무엇인가요?",
+      "answer": "협상",
+      "needMovie": "협상",
+      "needPerson": "",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w03",
+      "kind": "character",
+      "question": "황정민과 이정재가 함께 출연한 영화 ‘신세계’에서 경찰 잠입요원 역할은 누구인가요?",
+      "answer": "이정재",
+      "needMovie": "신세계",
+      "needPerson": "이정재",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w04",
+      "kind": "intersect-movie",
+      "question": "하정우와 김윤석이 함께 출연한 연쇄살인 추격 영화는 무엇인가요?",
+      "answer": "추격자",
+      "needMovie": "추격자",
+      "needPerson": "",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w05",
+      "kind": "intersect-movie",
+      "question": "강동원과 이병헌이 함께 출연한 영화는 무엇인가요?",
+      "answer": "좋은 놈, 나쁜 놈, 이상한 놈",
+      "needMovie": "좋은 놈, 나쁜 놈, 이상한 놈",
+      "needPerson": "",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w06",
+      "kind": "intersect-movie",
+      "question": "박서준과 아이유가 함께 출연한 영화는 무엇인가요?",
+      "answer": "드림",
+      "needMovie": "드림",
+      "needPerson": "",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w07",
+      "kind": "intersect-movie",
+      "question": "전도연과 설경구가 함께 출연한 영화는 무엇인가요?",
+      "answer": "생일",
+      "needMovie": "생일",
+      "needPerson": "",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w08",
+      "kind": "intersect-movie",
+      "question": "최민식과 황정민이 함께 출연한 영화는 무엇인가요?",
+      "answer": "신세계",
+      "needMovie": "신세계",
+      "needPerson": "",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w09",
+      "kind": "intersect-movie",
+      "question": "김혜수와 염정아가 함께 출연한 범죄 오락 영화는 무엇인가요?",
+      "answer": "타짜",
+      "needMovie": "타짜",
+      "needPerson": "",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w10",
+      "kind": "intersect-movie",
+      "question": "김태리와 하정우가 함께 출연한 영화는 무엇인가요?",
+      "answer": "아가씨",
+      "needMovie": "아가씨",
+      "needPerson": "",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w11",
+      "kind": "intersect-person",
+      "question": "봉준호 감독의 영화에 자주 출연하며 ‘괴물’, ‘설국열차’, ‘기생충’에 나온 배우는 누구인가요?",
+      "answer": "송강호",
+      "needMovie": "괴물",
+      "needPerson": "송강호",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w12",
+      "kind": "intersect-person",
+      "question": "박찬욱 감독의 영화 ‘올드보이’, ‘친절한 금자씨’, ‘박쥐’에 출연한 배우는 누구인가요?",
+      "answer": "송강호",
+      "needMovie": "올드보이",
+      "needPerson": "송강호",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w13",
+      "kind": "intersect-person",
+      "question": "류승완 감독의 영화 ‘베테랑’과 ‘모가디슈’에 모두 출연한 배우는 누구인가요?",
+      "answer": "황정민",
+      "needMovie": "베테랑",
+      "needPerson": "황정민",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w14",
+      "kind": "intersect-person",
+      "question": "김지운 감독의 영화 ‘달콤한 인생’, ‘좋은 놈, 나쁜 놈, 이상한 놈’, ‘악마를 보았다’에 출연한 배우는 누구인가요?",
+      "answer": "이병헌",
+      "needMovie": "달콤한 인생",
+      "needPerson": "이병헌",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w15",
+      "kind": "intersect-person",
+      "question": "나홍진 감독의 영화 ‘추격자’, ‘황해’, ‘곡성’에 모두 출연한 배우는 누구인가요?",
+      "answer": "김윤석",
+      "needMovie": "추격자",
+      "needPerson": "김윤석",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w16",
+      "kind": "intersect-person",
+      "question": "윤제균 감독의 영화 ‘해운대’와 ‘국제시장’에 출연한 배우는 누구인가요?",
+      "answer": "황정민",
+      "needMovie": "해운대",
+      "needPerson": "황정민",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w17",
+      "kind": "intersect-person",
+      "question": "최동훈 감독의 영화 ‘타짜’, ‘전우치’, ‘도둑들’, ‘암살’에 자주 출연한 배우는 누구인가요?",
+      "answer": "김윤석",
+      "needMovie": "도둑들",
+      "needPerson": "김윤석",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w18",
+      "kind": "intersect-person",
+      "question": "이준익 감독의 영화 ‘왕의 남자’, ‘사도’, ‘동주’에 출연한 배우는 누구인가요?",
+      "answer": "유아인",
+      "needMovie": "왕의 남자",
+      "needPerson": "유아인",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w19",
+      "kind": "intersect-person",
+      "question": "홍상수 감독의 여러 작품에 자주 출연했고 ‘밤의 해변에서 혼자’, ‘도망친 여자’에 나온 배우는 누구인가요?",
+      "answer": "김민희",
+      "needMovie": "도망친 여자",
+      "needPerson": "김민희",
+      "split": "user-v2",
+      "note": ""
+    },
+    {
+      "id": "w20",
+      "kind": "intersect-person",
+      "question": "김한민 감독의 영화 ‘최종병기 활’, ‘명량’, ‘한산: 용의 출현’에 출연한 배우는 누구인가요?",
+      "answer": "류승룡",
+      "needMovie": "명량",
+      "needPerson": "류승룡",
+      "split": "user-v2",
+      "note": ""
+    }
+  ]
+}
