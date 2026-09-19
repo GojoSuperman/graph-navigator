@@ -123,6 +123,7 @@ export default function Home() {
       nodes: res.evidence.map((e) => ({
         id: e.id, label: e.title, hop: Math.min(e.path.length, 3),
         korean: e.korean, isSeed: e.isSeed,
+        poster: e.posterPath, year: e.year,
       })),
       edges: (() => {
         const seen = new Set<string>();

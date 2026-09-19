@@ -38,20 +38,48 @@ export function placeFocus(items: { id: string; hop: number }[], spread = 24): P
   const out: Placed[] = [];
   for (const [hop, ids] of byHop) {
     const n = ids.length;
+
+    // 하나뿐이면 가운데
+    if (n === 1) {
+      out.push({ id: ids[0], hop, x: 0, y: hopY(hop), z: 0 });
+      continue;
+    }
+
+    /**
+     * **원둘레에 고르게 놓는다.**
+     *
+     * 한 줄로 늘어놓던 방식은 한 홉에 열 개가 몰리면 구와 라벨이 겹쳤다
+     * ("A·B·C에 모두 출연한 배우" 같은 질문에서 실제로 그랬다).
+     * 원형은 이웃 간 거리가 개수와 무관하게 일정해지고, 반지름만 늘리면
+     * 아무리 많아도 겹치지 않는다. 힘 기반 배치와 달리 계산이 없고
+     * **새로고침해도 자리가 같다** — 위치가 기억되는 편이 읽기에 낫다.
+     */
+    const radius = Math.max(spread, (n * spread) / (2 * Math.PI));
     ids.forEach((id, i) => {
-      const perRow = Math.min(n, 5);
-      const row = Math.floor(i / perRow);
-      const col = i % perRow;
-      const rowN = Math.min(perRow, n - row * perRow);
-      out.push({
-        id, hop,
-        x: (col - (rowN - 1) / 2) * spread,
-        y: hopY(hop),
-        z: row * spread * 0.8 - (Math.ceil(n / perRow) - 1) * spread * 0.4,
-      });
+      // 홉마다 조금씩 돌려 위아래 노드가 세로로 포개지지 않게 한다
+      const a = (i / n) * Math.PI * 2 + hop * 0.4;
+      out.push({ id, hop, x: Math.cos(a) * radius, y: hopY(hop), z: Math.sin(a) * radius });
     });
   }
   return out;
+}
+
+/** 배치의 중심과 크기 — 카메라를 여기에 맞춘다 */
+export function boundsOf(ps: Placed[]) {
+  if (!ps.length) return { center: { x: 0, y: 0, z: 0 }, radius: 40 };
+  const min = { x: Infinity, y: Infinity, z: Infinity };
+  const max = { x: -Infinity, y: -Infinity, z: -Infinity };
+  for (const p of ps) {
+    min.x = Math.min(min.x, p.x); max.x = Math.max(max.x, p.x);
+    min.y = Math.min(min.y, p.y); max.y = Math.max(max.y, p.y);
+    min.z = Math.min(min.z, p.z); max.z = Math.max(max.z, p.z);
+  }
+  const center = { x: (min.x + max.x) / 2, y: (min.y + max.y) / 2, z: (min.z + max.z) / 2 };
+  const radius = Math.max(
+    Math.hypot(max.x - min.x, max.y - min.y, max.z - min.z) / 2,
+    30,
+  );
+  return { center, radius };
 }
 
 /**

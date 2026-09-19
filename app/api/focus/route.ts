@@ -21,7 +21,12 @@ export async function GET(req: Request) {
 
   const nodeOf = (id: string, hop: number, isSeed: boolean) => {
     const m = g.movie(id)!;
-    return { id, label: m.title, hop, korean: m.originalLanguage === "ko", isSeed };
+    return {
+      id, label: m.title, hop, isSeed,
+      korean: m.originalLanguage === "ko",
+      poster: m.posterPath ?? null,
+      year: m.year,
+    };
   };
 
   // ── 인물 주제 — 그 사람이 잇는 작품들 ──────────────────────────────

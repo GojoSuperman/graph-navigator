@@ -405,3 +405,31 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 .modal-note p { margin: 0 0 8px; font-size: 12.5px; line-height: 1.7; color: var(--muted); }
 .modal-note p:last-child { margin-bottom: 0; }
 .modal-note b { color: var(--ink); }
+
+/* ── 3D 에서 고른 작품의 포스터 ─────────────────────────────────── */
+.poster-back {
+  position: absolute; inset: 0; z-index: 8; display: grid; place-items: center;
+  background: rgba(6, 8, 12, 0.78); padding: 24px;
+}
+.poster {
+  position: relative; max-width: min(320px, 80%);
+  background: #12161e; border: 1px solid #3a4354; border-radius: 14px;
+  overflow: hidden; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+}
+.poster img { display: block; width: 100%; height: auto; }
+.poster-none {
+  display: grid; place-items: center; aspect-ratio: 2 / 3;
+  color: #6b7585; font-size: 13px; background: #0b0d12;
+}
+.poster-x {
+  position: absolute; right: 8px; top: 8px; z-index: 2;
+  font: inherit; font-size: 14px; cursor: pointer; line-height: 1;
+  color: #e4e9f1; background: rgba(6, 8, 12, 0.75);
+  border: 1px solid #3a4354; border-radius: 8px; padding: 5px 9px;
+}
+.poster-x:hover { border-color: #64b5ff; }
+.poster-info { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 4px; }
+.poster-info b { font-size: 15px; color: #f2f5f9; }
+.poster-info span { font-size: 12.5px; color: #aab4c4; }
+.poster-info a { font-size: 13px; font-weight: 600; color: #64b5ff; text-decoration: none; margin-top: 4px; }
+.poster-info a:hover { text-decoration: underline; }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { SceneApi, VizEdge, VizNode } from "@/lib/scene.ts";
@@ -17,6 +18,9 @@ import type { SceneApi, VizEdge, VizNode } from "@/lib/scene.ts";
  */
 type Subject = { title: string; nodes: VizNode[]; edges: VizEdge[] } | null;
 
+/** TMDB 포스터 주소 */
+const posterUrl = (p: string) => `https://image.tmdb.org/t/p/w342${p}`;
+
 export const VIZ_EVENT = "viz:subject";
 
 export default function VizDock() {
@@ -26,6 +30,8 @@ export default function VizDock() {
   const apiRef = useRef<SceneApi | null>(null);
   const [subject, setSubject] = useState<Subject>(null);
   const [busy, setBusy] = useState(false);
+  /** 3D 에서 고른 작품 — 포스터 모달 */
+  const [picked, setPicked] = useState<VizNode | null>(null);
   const [mode, setMode] = useState<"focus" | "field">("focus");
   /** 전경형 배경은 한 번만 받아 둔다 — 토글할 때마다 다시 받지 않도록 */
   const fieldRef = useRef<{ nodes: { id: string; title: string; korean: boolean }[] } | null>(null);
@@ -41,7 +47,10 @@ export default function VizDock() {
         fieldRef.current = { nodes: d.nodes };
       }
       if (dead || !hostRef.current) return;
-      api = createScene(hostRef.current, mode, mode === "field" ? fieldRef.current : null);
+      api = createScene(
+        hostRef.current, mode, mode === "field" ? fieldRef.current : null,
+        (n) => setPicked(n),
+      );
       apiRef.current = api;
       api.show(subject ? { ...subject, refused: false } : null);
     })();
@@ -116,6 +125,24 @@ export default function VizDock() {
           <span><b>휠</b> 확대·축소</span>
           <span><b>오른쪽 클릭</b> 이동</span>
         </div>
+
+        {picked && (
+          <div className="poster-back" onClick={(e) => e.target === e.currentTarget && setPicked(null)}>
+            <div className="poster" role="dialog" aria-modal="true" aria-label={picked.label}>
+              <button className="poster-x" onClick={() => setPicked(null)} aria-label="닫기">✕</button>
+              {picked.poster
+                ? <img src={posterUrl(picked.poster)} alt={`${picked.label} 포스터`} />
+                : <div className="poster-none">포스터 없음</div>}
+              <div className="poster-info">
+                <b>{picked.label}</b>
+                <span>{picked.year ?? ""} {picked.korean ? "· 🇰🇷 한국" : "· 해외"}</span>
+                <Link href={`/browse?id=${encodeURIComponent(picked.id)}`} onClick={() => setPicked(null)}>
+                  자세히 보기 →
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         {!subject && !busy && (
           <p className="dock-empty">

@@ -32,6 +32,7 @@ export interface EvidenceMovie {
   genres: string[];
   voteAverage: number;
   korean: boolean;
+  posterPath: string | null;
   awards: { award: string; year: number | null }[];
   path: PathStep[];
   isSeed: boolean;
@@ -130,6 +131,7 @@ const toEvidence = (g: MovieGraph, m: Movie, path: Hop[], isSeed: boolean): Evid
   genres: m.genres,
   voteAverage: m.voteAverage,
   korean: m.originalLanguage === "ko",
+  posterPath: m.posterPath ?? null,
   awards: m.awards ?? [],
   path: toSteps(g, path),
   isSeed,

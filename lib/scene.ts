@@ -14,9 +14,9 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
-import { HOP_LABEL, HOP_GAP, hopY, placeField, placeFocus, type Placed } from "@/lib/viz.ts";
+import { HOP_LABEL, HOP_GAP, hopY, boundsOf, placeField, placeFocus, type Placed } from "@/lib/viz.ts";
 
-export interface VizNode { id: string; label: string; hop: number; korean: boolean; isSeed: boolean }
+export interface VizNode { id: string; label: string; hop: number; korean: boolean; isSeed: boolean; poster?: string | null; year?: number | null }
 export interface VizEdge { from: string; to: string; via: string }
 export interface VizInput { nodes: VizNode[]; edges: VizEdge[]; refused: boolean }
 export interface FieldData { nodes: { id: string; title: string; korean: boolean }[] }
@@ -38,6 +38,8 @@ export function createScene(
   host: HTMLElement,
   mode: "focus" | "field",
   field: FieldData | null,
+  /** 노드를 누르면 알려 준다 — 포스터 모달을 띄우는 쪽에서 받는다 */
+  onPick?: (n: VizNode) => void,
 ): SceneApi {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0b0d12);
@@ -122,6 +124,7 @@ export function createScene(
   let t0 = 0;
 
   function clear() {
+    picks.length = 0;
     for (const o of [...live.children]) {
       live.remove(o);
       o.traverse?.((c) => {
@@ -137,6 +140,8 @@ export function createScene(
   }
 
   const sphere = new THREE.SphereGeometry(1, 20, 16);
+  /** 화면에 떠 있는 노드 — 클릭 판정에 쓴다 */
+  const picks: { mesh: THREE.Mesh; node: VizNode }[] = [];
 
   function show(input: VizInput | null) {
     clear();
@@ -206,6 +211,7 @@ export function createScene(
       mesh.position.set(p.x, p.y, p.z);
       mesh.scale.setScalar(0.001);
       live.add(mesh);
+      picks.push({ mesh, node: n });
       anims.push({ mesh, a: new THREE.Vector3(n.isSeed ? 4.4 : 3.2, 0, 0), b: new THREE.Vector3(), at: arrivalAt.get(n.id) ?? 0 });
 
       const el = document.createElement("div");
@@ -218,8 +224,59 @@ export function createScene(
       live.add(tag);
     }
 
+    /**
+     * 카메라를 배치에 맞춘다.
+     *
+     * 고정 타깃을 쓰면 노드가 적거나 많을 때마다 그래프가 구석으로 몰린다
+     * (실제로 좌측 상단에 치우쳐 보였다). 노드들의 **중심**을 보게 하고,
+     * 전체가 화면에 들어오도록 거리를 반경에서 계산한다.
+     */
+    const b = boundsOf([...local.values()]);
+    const target = new THREE.Vector3(b.center.x, b.center.y, b.center.z);
+    const dist = Math.max(70, (b.radius * 2.6) / Math.tan((camera.fov * Math.PI) / 360));
+    const dir = new THREE.Vector3(0.45, 0.42, 1).normalize();
+    camera.position.copy(target).addScaledVector(dir, dist);
+    controls.target.copy(target);
+    controls.update();
+
     t0 = performance.now() / 1000;
   }
+
+  // ── 고르기 ─────────────────────────────────────────────────────────
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  let hovered: THREE.Mesh | null = null;
+
+  function hit(ev: PointerEvent) {
+    const r = renderer.domElement.getBoundingClientRect();
+    ndc.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
+    ndc.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+    ray.setFromCamera(ndc, camera);
+    const found = ray.intersectObjects(picks.map((p) => p.mesh), false)[0];
+    return found ? picks.find((p) => p.mesh === found.object) ?? null : null;
+  }
+
+  let downAt = 0;
+  const onDown = () => { downAt = performance.now(); };
+  const onUp = (ev: PointerEvent) => {
+    // 끌어서 회전한 것과 구분한다 — 짧게 누른 것만 선택으로 본다
+    if (performance.now() - downAt > 250) return;
+    const p = hit(ev);
+    if (p) onPick?.(p.node);
+  };
+  const onMove = (ev: PointerEvent) => {
+    const p = hit(ev);
+    const next = p?.mesh ?? null;
+    if (next === hovered) return;
+    if (hovered) hovered.scale.multiplyScalar(1 / 1.35);
+    hovered = next;
+    if (hovered) hovered.scale.multiplyScalar(1.35);
+    renderer.domElement.style.cursor = hovered ? "pointer" : "";
+  };
+  const surface = labelRenderer.domElement;
+  surface.addEventListener("pointerdown", onDown);
+  surface.addEventListener("pointerup", onUp);
+  surface.addEventListener("pointermove", onMove);
 
   let raf = 0;
   const tmp = new THREE.Vector3();
@@ -269,6 +326,9 @@ export function createScene(
   return {
     show, resize,
     dispose() {
+      surface.removeEventListener("pointerdown", onDown);
+      surface.removeEventListener("pointerup", onUp);
+      surface.removeEventListener("pointermove", onMove);
       cancelAnimationFrame(raf);
       clear();
       controls.dispose();

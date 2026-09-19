@@ -29,6 +29,8 @@ export interface Movie {
   popularity: number;
   voteAverage: number;
   voteCount: number;
+  /** 포스터 경로. 앞에 https://image.tmdb.org/t/p/w342 를 붙여 쓴다 */
+  posterPath: string | null;
   /** 시리즈(컬렉션) 소속 — 《범죄도시》 같은 것 */
   collection: number | null;
   /**

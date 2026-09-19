@@ -49,6 +49,7 @@ const movies: Movie[] = raw.movies.map((m: any) => ({
   popularity: m.popularity ?? 0,
   voteAverage: m.vote_average ?? 0,
   voteCount: m.vote_count ?? 0,
+  posterPath: m.poster_path ?? null,
   collection: null,
   awards: awardsOf[String(m.id)] ?? undefined,
 }));
