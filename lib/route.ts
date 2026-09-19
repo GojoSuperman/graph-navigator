@@ -12,6 +12,7 @@
 import { BM25 } from "./bm25.ts";
 import type { MovieGraph } from "./graph.ts";
 import type { Route } from "./types.ts";
+import { nameMatches } from "./romanize.ts";
 
 /** 조회·탐색으로 답할 수 없는 것 — 답하지 않는 것이 정답이다 */
 const OUT_OF_SCOPE = [
@@ -35,6 +36,9 @@ const BRIDGE_HINTS = [
   "감독이 만든", "같은 감독", "그 감독",
 ];
 
+/** 배역을 통해 배우를 묻는다 — "기택 역을 맡은 배우" */
+const CHARACTER_HINTS = ["역을 맡", "역을 연기", "역의 배우", "역할을 맡", "로 나온", "역 배우", "을 연기한", "를 연기한"];
+
 /** 비슷한 것을 찾는다 */
 const SIMILAR_HINTS = ["비슷한", "같은 느낌", "추천", "볼 만한", "닮은"];
 
@@ -55,6 +59,9 @@ export function route(question: string): RouteResult {
 
   const fi = hit(FILMOGRAPHY_HINTS);
   if (fi) return { route: "filmography", reason: `작품 목록을 물음: ${fi}` };
+
+  const ch = hit(CHARACTER_HINTS);
+  if (ch) return { route: "lookup", reason: `배역으로 배우를 물음: ${ch}` };
 
   const si = hit(SIMILAR_HINTS);
   if (si) return { route: "similar", reason: `유사 작품을 물음: ${si}` };
@@ -108,6 +115,52 @@ export function seedsFromPerson(question: string, g: MovieGraph, top = 4): strin
   return films.map((m) => m!.id);
 }
 
+/**
+ * 배역명으로 작품을 찾는다.
+ *
+ * TMDB 는 배역명을 로마자로만 준다 — "기택" 이 "Kim Ki-taek" 으로 들어 있다.
+ * 줄거리 텍스트에는 배우 이름도 배역 이름도 없으므로, **크레딧이라는 선을 건너지
+ * 않으면 영원히 못 찾는다.** 이 프로젝트가 증명하려는 자리가 바로 여기다.
+ */
+/**
+ * 질문에 늘 나오는 말은 배역 후보에서 뺀다.
+ *
+ * 실측으로 확인한 사고 — "배우" 가 로마자로 `bau` 가 되어 **온 세상 Paul** 과
+ * 맞아 버렸다 (Paul, Paula, Paul Brodie, Paul Doyle …). "영화" 는 `Myeong-hwa`
+ * 와 맞았다. 느슨한 대조는 이런 식으로 조용히 망가진다.
+ */
+const NOT_A_CHARACTER = new Set([
+  "영화", "배우", "누구", "누구인", "누구인가", "누구인가요", "무엇", "무엇인",
+  "역을", "역할", "역할을", "맡은", "맡았", "연기", "연기한", "출연", "출연한",
+  "주연", "조연", "악역", "감독", "작품", "제목", "이름", "알려", "알려줘",
+  "어떻게", "어떤", "무슨", "시리즈", "나오는", "나온",
+]);
+
+export function seedsFromCharacter(question: string, g: MovieGraph, top = 3): string[] {
+  // 2~4글자 한글 덩어리를 배역 후보로 본다 (조사가 붙은 형태도 앞에서 잘라 본다)
+  const cands = new Set<string>();
+  for (const w of question.match(/[가-힣]{2,5}/g) ?? []) {
+    for (const c of [w, w.slice(0, w.length - 1), w.slice(0, w.length - 2)]) {
+      if (c.length >= 2 && !NOT_A_CHARACTER.has(c)) cands.add(c);
+    }
+  }
+  const scored: { id: string; len: number; pop: number }[] = [];
+  for (const m of g.movies.values()) {
+    for (const e of g.creditsOf(m.id, "ACTED_IN")) {
+      if (!e.as) continue;
+      for (const c of cands) {
+        if (c.length >= 2 && nameMatches(c, e.as)) {
+          scored.push({ id: m.id, len: c.length, pop: m.popularity });
+        }
+      }
+    }
+  }
+  // 긴 후보가 이긴다 — '마석도'가 '석도'에 먹히지 않도록
+  return [...new Set(
+    scored.sort((a, b) => b.len - a.len || b.pop - a.pop).map((x) => x.id),
+  )].slice(0, top);
+}
+
 /** 장르 색인 — 법령의 '정의 용어 색인' 과 같은 자리 */
 export function seedsFromGenre(question: string, g: MovieGraph, top = 3): string[] {
   const q = norm(question);
@@ -130,6 +183,7 @@ export function domainSignal(question: string, g: MovieGraph): { ok: boolean; re
   if (seedsFromTitle(question, g).length) return { ok: true, reason: "작품 제목을 지목했다" };
   if (seedsFromPerson(question, g).length) return { ok: true, reason: "인물 이름이 있다" };
   if (seedsFromGenre(question, g).length) return { ok: true, reason: "장르를 지목했다" };
+  if (seedsFromCharacter(question, g).length) return { ok: true, reason: "배역명이 있다" };
   const q = norm(question);
   const word = ["영화", "배우", "감독", "출연", "작품", "주연", "개봉", "시리즈"].find((w) => q.includes(w));
   if (word) return { ok: true, reason: `영화 이야기의 말: ${word}` };
@@ -151,9 +205,10 @@ export function findSeeds(question: string, g: MovieGraph, top = 3): string[] {
 
   const titles = seedsFromTitle(question, g);
   const people = seedsFromPerson(question, g);
+  const chars = seedsFromCharacter(question, g);
 
-  // 제목이 잡혔으면 거기서 출발한다. 인물까지 같이 말했으면 둘 다 기준점이다.
-  if (titles.length) return [...new Set([...titles, ...people])];
+  // 제목·배역은 확실한 단서다. 하나라도 잡히면 거기서 출발하고 BM25 는 부르지 않는다.
+  if (titles.length || chars.length) return [...new Set([...titles, ...chars, ...people])];
 
   return [...new Set([...people, ...seedsFromGenre(question, g), ...seedsFromKeywords(question, g, top)])];
 }
