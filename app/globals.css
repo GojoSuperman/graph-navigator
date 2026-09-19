@@ -267,18 +267,12 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
   display: flex; flex-direction: column;
   background: #0b0d12; border-left: 1px solid var(--line);
 }
-.dock.closed { height: auto; align-self: start; }
 @media (max-width: 860px) { .dock { height: 60vh; border-left: 0; border-top: 1px solid var(--line); } }
 
 .dock-bar {
   display: flex; align-items: center; gap: 10px; padding: 8px 10px;
   border-bottom: 1px solid #222833; background: #0e1118; flex-wrap: wrap;
 }
-.dock-fold {
-  font: inherit; font-size: 12px; font-weight: 600; padding: 5px 9px; cursor: pointer;
-  color: #98a2b3; background: transparent; border: 1px solid #2a303a; border-radius: 7px;
-}
-.dock-fold:hover { color: #d8dee8; border-color: #3a424f; }
 
 /* 집중형 / 전경형 */
 .dock-switch {

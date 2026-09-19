@@ -24,7 +24,6 @@ export default function VizDock() {
   const params = useSearchParams();
   const hostRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<SceneApi | null>(null);
-  const [open, setOpen] = useState(true);
   const [subject, setSubject] = useState<Subject>(null);
   const [busy, setBusy] = useState(false);
   const [mode, setMode] = useState<"focus" | "field">("focus");
@@ -33,7 +32,6 @@ export default function VizDock() {
 
   // ── 씬 ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!open) return;
     let dead = false;
     let api: SceneApi | null = null;
     (async () => {
@@ -56,7 +54,7 @@ export default function VizDock() {
       apiRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, mode]);
+  }, [mode]);
 
   useEffect(() => {
     apiRef.current?.show(subject ? { ...subject, refused: false } : null);
@@ -90,44 +88,34 @@ export default function VizDock() {
   }, []);
 
   return (
-    <aside className={open ? "dock" : "dock closed"}>
+    <aside className="dock">
       <div className="dock-bar">
-        <button className="dock-fold" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-          {open ? "▸" : "◂ 3D"}
-        </button>
+        <div className="dock-switch" role="group" aria-label="시각화 방식">
+          {(["focus", "field"] as const).map((m) => (
+            <button key={m} type="button" className={m === mode ? "on" : undefined}
+              aria-pressed={m === mode} onClick={() => setMode(m)}>
+              {m === "focus" ? "집중형" : "전경형"}
+            </button>
+          ))}
+        </div>
 
-        {open && (
-          <>
-            <div className="dock-switch" role="group" aria-label="시각화 방식">
-              {(["focus", "field"] as const).map((m) => (
-                <button key={m} type="button" className={m === mode ? "on" : undefined}
-                  aria-pressed={m === mode} onClick={() => setMode(m)}>
-                  {m === "focus" ? "집중형" : "전경형"}
-                </button>
-              ))}
-            </div>
+        <span className="dock-title">{busy ? "그리는 중…" : subject?.title ?? "3D"}</span>
 
-            <span className="dock-title">{busy ? "그리는 중…" : subject?.title ?? "3D"}</span>
-
-            {/* 범례는 무대 위가 아니라 막대에 둔다 — 회전해도 늘 보여야 한다 */}
-            <div className="dock-legend" aria-label="색 범례">
-              <span><i className="dot ko" /> 한국 작품</span>
-              <span><i className="dot fo" /> 해외 작품</span>
-              <span><i className="dot br" /> 다리 — 선 위의 이름이 건너게 해 준 사람</span>
-            </div>
-          </>
+        {/* 범례는 무대 위가 아니라 막대에 둔다 — 회전해도 늘 보여야 한다 */}
+        <div className="dock-legend" aria-label="색 범례">
+          <span><i className="dot ko" /> 한국 작품</span>
+          <span><i className="dot fo" /> 해외 작품</span>
+          <span><i className="dot br" /> 다리 — 선 위의 이름이 건너게 해 준 사람</span>
+        </div>
+      </div>
+      <div className="dock-stage" ref={hostRef}>
+        {!subject && !busy && (
+          <p className="dock-empty">
+            왼쪽에서 작품·인물을 고르거나 질문하면
+            <br />여기에 <b>건너간 다리</b>가 그려집니다
+          </p>
         )}
       </div>
-      {open && (
-        <div className="dock-stage" ref={hostRef}>
-          {!subject && !busy && (
-            <p className="dock-empty">
-              왼쪽에서 작품·인물을 고르거나 질문하면
-              <br />여기에 <b>건너간 다리</b>가 그려집니다
-            </p>
-          )}
-        </div>
-      )}
     </aside>
   );
 }
