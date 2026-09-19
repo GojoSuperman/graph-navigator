@@ -31,6 +31,8 @@ const FILMOGRAPHY_HINTS = [
 /** ★ 다리를 건너야 답이 되는 질문 — 이 프로젝트가 증명하려는 자리 */
 const BRIDGE_HINTS = [
   "와 함께", "과 함께", "함께 출연", "함께 주연", "같이 출연", "모두 출연", "자주 출연",
+  // 배역 → 배우 → 다른 작품. 세 단계이고, 가운데 배우 이름이 질문에 없다.
+  "연기한 배우가", "맡은 배우가", "역의 배우가", "배우가 출연한", "배우가 주연",
   "같이 나온", "함께 나온", "같이 출연", "함께 출연",
   "나온 배우가", "나왔던 배우", "그 배우가", "같은 배우",
   "다른 영화", "또 나온", "에도 나온", "에도 출연",
@@ -290,6 +292,28 @@ export function seedsFromCharacter(question: string, g: MovieGraph, top = 3): st
       if (c.length >= 2 && !NOT_A_CHARACTER.has(c)) cands.add(c);
     }
   }
+  /**
+   * 질문에 작품이 지목돼 있으면 **그 작품 안에서만** 배역을 찾는다.
+   *
+   * 전체를 훑으면 흔한 이름이 잡음으로 걸러진다. 실측 —
+   *   '기택' 6건 · '석우' 16건 · '기우' 4건 → 전부 "흔한 말" 로 제거됐다.
+   * 그런데 이들은 진짜 배역명이다. **몇 편에 걸치는가로는 배역명과 일반어를
+   * 가를 수 없다.** 작품이 주어졌으면 범위를 좁히는 것이 옳은 해법이다.
+   */
+  const scoped = titlesIn(question, g);
+  if (scoped.length) {
+    const hits: { id: string; len: number }[] = [];
+    for (const m of scoped) {
+      for (const e of g.creditsOf(m.id, "ACTED_IN")) {
+        if (!e.as) continue;
+        for (const c of cands) if (c.length >= 2 && nameMatches(c, e.as)) hits.push({ id: m.id, len: c.length });
+      }
+    }
+    if (hits.length) {
+      return [...new Set(hits.sort((a, b) => b.len - a.len).map((x) => x.id))].slice(0, top);
+    }
+  }
+
   const scored: { id: string; len: number; pop: number; rare: number }[] = [];
   const perCand = new Map<string, number>();
   for (const m of g.movies.values()) {
@@ -395,6 +419,53 @@ export function seedsFromAward(question: string, g: MovieGraph, top = 8): string
   return hits.slice(0, top).map((x) => x.id);
 }
 
+/**
+ * ★ 배역 → 배우 → **그 배우의 다른 작품**.
+ *
+ * "《기생충》에서 기우를 연기한 배우가 출연한 좀비 영화는?" 은 **세 단계**다.
+ * 가운데 배우(최우식)의 이름이 질문에 없으므로, 배역을 풀어야 비로소 사람이 나오고
+ * 거기서 다시 작품으로 건너간다. 이 프로젝트에서 가장 긴 다리다.
+ *
+ * 탐색에 맡기면 씨앗 《기생충》에서 감독(봉준호) 쪽으로 새어 나간다 — 실측으로
+ * 확인했다(괴물·살인의 추억·마더…). 그래서 배우를 특정한 뒤 **그 사람의 작품만**
+ * 씨앗으로 준다.
+ */
+export function seedsFromCharacterActor(question: string, g: MovieGraph, top = 8): string[] {
+  const onCharacterBridge = /연기한 배우가|맡은 배우가|역의 배우가|배우가 출연|배우가 주연/.test(question);
+  if (!onCharacterBridge) return [];
+
+  // 질문에 지목된 작품이 있으면 그것을 출발점으로 삼는다
+  const named = titlesIn(question, g).map((m) => m.id);
+  const from = named.length ? named.slice(0, 2) : seedsFromCharacter(question, g, 2);
+  if (!from.length) return [];
+
+  const cands = new Set<string>();
+  for (const raw of question.split(/\s+/)) {
+    const w = (raw.match(/[가-힣]{2,7}/) ?? [""])[0];
+    for (const c of [w, w.slice(0, -1), w.slice(0, -2)]) {
+      if (c.length >= 2 && !NOT_A_CHARACTER.has(c)) cands.add(c);
+    }
+  }
+  const actors = new Set<string>();
+  for (const mid of from) {
+    for (const e of g.creditsOf(mid, "ACTED_IN")) {
+      if (!e.as) continue;
+      for (const c of cands) if (nameMatches(c, e.as)) actors.add(e.from);
+    }
+  }
+  const out: string[] = [];
+  for (const pid of actors) {
+    for (const e of g.filmsOf(pid, "ACTED_IN")) {
+      if (!from.includes(e.to) && g.movie(e.to)) out.push(e.to);
+    }
+  }
+  return [...new Set(out)]
+    .map((id) => g.movie(id)!)
+    .sort((a, b) => b.popularity - a.popularity)
+    .slice(0, top)
+    .map((m) => m.id);
+}
+
 /** 장르 색인 — 법령의 '정의 용어 색인' 과 같은 자리 */
 export function seedsFromGenre(question: string, g: MovieGraph, top = 3): string[] {
   const q = norm(question);
@@ -462,19 +533,38 @@ export function findSeeds(question: string, g: MovieGraph, top = 3): string[] {
   const common = commonPeople(question, g);
   if (common.people.length) return common.movies;
 
+  // 배역 → 배우 → 다른 작품. 가장 좁은 단서이므로 잡히면 그것만 쓴다.
+  const viaActor = seedsFromCharacterActor(question, g);
+  if (viaActor.length) return viaActor;
+
   const titles = seedsFromTitle(question, g);
   const people = seedsFromPerson(question, g);
   const chars = seedsFromCharacter(question, g);
   const awards = seedsFromAward(question, g);
   const pAwards = seedsFromPersonAward(question, g);
 
-  // 제목·배역·수상은 확실한 단서다. 하나라도 잡히면 거기서 출발하고 BM25 는 부르지 않는다.
-  // 인물 수상은 가장 좁은 단서다 — 맨 앞에 둔다
-  if (titles.length || chars.length || awards.length || pAwards.length) {
+  /**
+   * **제목·인물·수상은 확실한 단서**다. 잡히면 거기서 출발하고 BM25 는 부르지 않는다.
+   * (인물 수상이 가장 좁으므로 맨 앞에 둔다)
+   *
+   * 배역은 다르다. 로마자를 거쳐 대조하므로 본질적으로 흐릿하다. 홀드아웃에서
+   * 이것 때문에 줄거리 질문이 무너졌다 —
+   *   "딸을 데리고 부산으로 향하던 KTX 안에서 좀비…"
+   *   배역 씨앗 《두더지》·《몬스터 대학교》가 잡히자 BM25 를 아예 부르지 않았고,
+   *   정작 BM25 2위가 《부산행》이었다.
+   * 그래서 배역 씨앗은 **BM25 를 막지 않는다.** 앞에 두되 뒤를 함께 담는다.
+   */
+  if (titles.length || awards.length || pAwards.length) {
     return [...new Set([...pAwards, ...titles, ...chars, ...awards, ...people])];
   }
-
-  return [...new Set([...people, ...seedsFromGenre(question, g), ...seedsFromKeywords(question, g, top)])];
+  return [
+    ...new Set([
+      ...chars,
+      ...people,
+      ...seedsFromGenre(question, g),
+      ...seedsFromKeywords(question, g, top),
+    ]),
+  ];
 }
 
 /**
