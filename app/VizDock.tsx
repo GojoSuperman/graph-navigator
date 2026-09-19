@@ -100,13 +100,6 @@ export default function VizDock() {
         </div>
 
         <span className="dock-title">{busy ? "그리는 중…" : subject?.title ?? "3D"}</span>
-
-        {/* 범례는 무대 위가 아니라 막대에 둔다 — 회전해도 늘 보여야 한다 */}
-        <div className="dock-legend" aria-label="색 범례">
-          <span><i className="dot ko" /> 한국 작품</span>
-          <span><i className="dot fo" /> 해외 작품</span>
-          <span><i className="dot br" /> 다리 — 선 위의 이름이 건너게 해 준 사람</span>
-        </div>
       </div>
       <div className="dock-stage" ref={hostRef}>
         {!subject && !busy && (
