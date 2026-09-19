@@ -35,6 +35,13 @@ export default async function Browse({
           <h1>{p.name}</h1>
           <p>{p.department} · 출연 {acted.length}편{directed.length ? ` · 연출 ${directed.length}편` : ""}</p>
         </header>
+
+        {/* 탐색기는 독립된 화면이다. 3D 에는 **주제만** 넘긴다. */}
+        <Link className="to3d" href={`/viz?person=${encodeURIComponent(p.id)}`}>
+          <span className="to3d-main">{p.name} 이 잇는 작품을 3D로</span>
+          <span className="to3d-sub">이 사람을 거쳐야만 이어지는 작품들이 선으로 보입니다</span>
+          <span className="to3d-go" aria-hidden="true">→</span>
+        </Link>
         {p.awards?.length ? (
           <section className="card">
             <h2>수상 {p.awards.length}건</h2>
@@ -101,6 +108,12 @@ export default async function Browse({
           {m.originalTitle !== m.title && ` · 원제 ${m.originalTitle}`}
         </p>
       </header>
+
+      <Link className="to3d" href={`/viz?movie=${encodeURIComponent(m.id)}`}>
+        <span className="to3d-main">《{m.title}》에서 뻗는 관계를 3D로</span>
+        <span className="to3d-sub">출연·연출을 거쳐 닿는 다른 작품들. 선 위의 이름이 다리입니다</span>
+        <span className="to3d-go" aria-hidden="true">→</span>
+      </Link>
 
       {m.awards?.length ? (
         <section className="card">

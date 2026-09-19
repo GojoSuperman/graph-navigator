@@ -42,10 +42,22 @@ function toViz(res: Payload): { nodes: VizNode[]; edges: VizEdge[]; refused: boo
   return { nodes, edges, refused: res.refused || res.premiseBroken };
 }
 
+/**
+ * 3D 는 네 가지 입구를 받는다. 세 페이지가 서로를 몰라도 되도록,
+ * 각자 **주제만** 주소에 실어 보낸다.
+ *   ?q=질문      질문 화면에서 — 답까지 건넌 다리
+ *   ?movie=…     작품 탐색기에서 — 그 작품에서 뻗는 관계
+ *   ?person=…    탐색기·지도에서 — 그 사람이 잇는 작품들
+ */
 const fromUrl = () => {
-  if (typeof window === "undefined") return { mode: "focus" as Mode, q: "" };
+  if (typeof window === "undefined") return { mode: "focus" as Mode, q: "", movie: "", person: "" };
   const p = new URLSearchParams(location.search);
-  return { mode: (p.get("mode") === "field" ? "field" : "focus") as Mode, q: (p.get("q") ?? "").trim() };
+  return {
+    mode: (p.get("mode") === "field" ? "field" : "focus") as Mode,
+    q: (p.get("q") ?? "").trim(),
+    movie: (p.get("movie") ?? "").trim(),
+    person: (p.get("person") ?? "").trim(),
+  };
 };
 
 export default function Viz() {
@@ -58,6 +70,8 @@ export default function Viz() {
   const [q, setQ] = useState(SAMPLES[0]);
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<Payload | null>(null);
+  /** 질문이 아니라 주제로 들어온 경우 — 무대에 띄울 것과 설명 */
+  const [subject, setSubject] = useState<{ title: string; viz: ReturnType<typeof toViz> } | null>(null);
 
   async function run(question: string) {
     const text = question.trim();
@@ -70,6 +84,7 @@ export default function Viz() {
         body: JSON.stringify({ question: text }),
       });
       setRes(await r.json());
+      setSubject(null);
       const u = new URL(location.href);
       u.searchParams.set("q", text);
       history.replaceState(null, "", u);
@@ -78,11 +93,25 @@ export default function Viz() {
     }
   }
 
-  // 주소에 질문이 실려 오면 **바로 실행한다** — 넘어온 사람에게 다시 누르게 하면 흐름이 끊긴다.
+  async function focusOn(kind: "movie" | "person", id: string) {
+    setBusy(true);
+    try {
+      const d = await fetch(`/api/focus?${kind}=${encodeURIComponent(id)}`).then((r) => r.json());
+      if (d.error) return;
+      setRes(null);
+      setSubject({ title: d.subject, viz: { nodes: d.nodes, edges: d.edges, refused: false } });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // 주소에 실려 온 것을 **바로 실행한다** — 넘어온 사람에게 다시 누르게 하면 흐름이 끊긴다.
   useEffect(() => {
-    const { mode: m, q: incoming } = fromUrl();
+    const { mode: m, q: incoming, movie, person } = fromUrl();
     setMode(m);
     if (incoming) { setQ(incoming); void run(incoming); }
+    else if (movie) void focusOn("movie", movie);
+    else if (person) void focusOn("person", person);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -113,8 +142,9 @@ export default function Viz() {
 
   // 모드를 바꿔도 직전 결과를 그대로 다시 그린다 — 매번 다시 물으면 비교가 안 된다.
   useEffect(() => {
-    if (ready) apiRef.current?.show(res ? toViz(res) : null);
-  }, [res, ready]);
+    if (!ready) return;
+    apiRef.current?.show(res ? toViz(res) : subject ? subject.viz : null);
+  }, [res, subject, ready]);
 
   const pick = useCallback((m: Mode) => {
     setMode(m);
@@ -134,7 +164,7 @@ export default function Viz() {
               aria-pressed={m.id === mode} onClick={() => pick(m.id)}>{m.name}</button>
           ))}
         </div>
-        {res && <p className="viz-question">{res.question}</p>}
+        {(res || subject) && <p className="viz-question">{res ? res.question : subject!.title}</p>}
 
         {/*
           범례는 화면에 **고정**한다. 3D 공간 안에 둔 층 이름은 회전하면 등을 보이거나
@@ -162,6 +192,21 @@ export default function Viz() {
             <button key={s} type="button" onClick={() => { setQ(s); void run(s); }}>{s}</button>
           ))}
         </div>
+
+        {!res && subject && (
+          <div className="viz-result">
+            <p className="viz-meta">{subject.title} · {subject.viz.nodes.length}편</p>
+            <ol className="viz-list">
+              {subject.viz.nodes.map((n) => (
+                <li key={n.id} className={n.isSeed ? "seed" : undefined}>
+                  <Link href={`/browse?id=${encodeURIComponent(n.id)}`}>
+                    {n.korean ? "🇰🇷 " : ""}{n.label}
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
 
         {res && (
           <div className="viz-result">

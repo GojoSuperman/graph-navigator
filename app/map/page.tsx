@@ -85,7 +85,12 @@ export default async function MapPage() {
           {bridges.slice(0, 12).map((b) => (
             <li key={b.id}>
               <Link href={`/browse?person=${encodeURIComponent(b.id)}`}><b>{b.name}</b></Link>
-              <span>🇰🇷 {b.ko.slice(0, 2).join(", ")} → {b.fo.slice(0, 2).join(", ")}</span>
+              <span>
+                🇰🇷 {b.ko.slice(0, 2).join(", ")} → {b.fo.slice(0, 2).join(", ")}
+                {" · "}
+                {/* 지도도 독립 화면이다. 3D 에는 주제만 넘긴다. */}
+                <Link href={`/viz?person=${encodeURIComponent(b.id)}`}>3D</Link>
+              </span>
             </li>
           ))}
         </ul>
@@ -113,7 +118,9 @@ export default async function MapPage() {
               <Link href={`/browse?id=${encodeURIComponent(m.id)}`}>
                 <b>{m.title}</b>{m.year ? ` (${m.year})` : ""}
               </Link>
-              <span>연결 {deg}</span>
+              <span>
+                연결 {deg} · <Link href={`/viz?movie=${encodeURIComponent(m.id)}`}>3D</Link>
+              </span>
             </li>
           ))}
         </ul>
