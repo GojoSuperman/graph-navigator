@@ -323,3 +323,14 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 }
 .followup b { font-weight: 700; }
 .followup.gave { background: var(--warn-bg); border-color: var(--warn-line); color: var(--warn-ink); }
+
+/* 3D 조작 방법 — 무대 좌측 하단 */
+.dock-help {
+  position: absolute; left: 10px; bottom: 10px; z-index: 3;
+  display: flex; gap: 12px; flex-wrap: wrap;
+  padding: 6px 11px; border-radius: 8px;
+  background: rgba(11, 13, 18, 0.7); border: 1px solid #222833;
+  pointer-events: none;
+}
+.dock-help span { font-size: 10.5px; color: #8b95a5; white-space: nowrap; }
+.dock-help b { color: #c6cedb; font-weight: 600; margin-right: 3px; }

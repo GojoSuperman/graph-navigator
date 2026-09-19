@@ -188,15 +188,18 @@ console.log(`\r   ${done}편 완료`);
 // 한글 별칭만 골라 붙인다.
 console.log("\n⑤ 인물 별칭 조회…");
 const aliasOf: Record<number, string[]> = {};
+// 전원(2만 명)을 조회하면 86분이다. 별칭이 의미 있는 것은 **여러 작품에 나오는 인물**이므로
+// 2편 이상 참여자만 본다 — 단역은 별칭으로 검색될 일이 거의 없다.
 const worth = [...people.values()]
-  .filter((p) => (filmsOfPerson.get(p.id)?.size ?? 0) >= 1)
+  .filter((p) => (filmsOfPerson.get(p.id)?.size ?? 0) >= 2)
   .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
 let an = 0;
 for (const p of worth) {
   try {
     const d = await api(`/person/${p.id}`);
-    const ko = (d.also_known_as ?? []).filter((x: string) => /^[가-힣][가-힣\s]{1,9}$/.test(x));
-    if (ko.length) aliasOf[p.id] = [...new Set(ko)];
+    const ko: string[] = (d.also_known_as ?? []).filter((x: string) => /^[가-힣][가-힣\s]{1,9}$/.test(x));
+    const uniq = [...new Set<string>(ko)].filter((x) => x !== p.name);
+    if (uniq.length) aliasOf[p.id] = uniq;
   } catch { /* 한 명 실패가 전체를 막지 않는다 */ }
   if (++an % 200 === 0) process.stdout.write(`\r   ${an}/${worth.length}명…`);
 }
