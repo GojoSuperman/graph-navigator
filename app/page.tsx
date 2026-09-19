@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { VIZ_EVENT } from "./VizDock.tsx";
 import type { AskResult, EvidenceMovie, PathStep } from "@/lib/ask.ts";
 
-type Payload = AskResult & { answer: string | null; llm: { reason: string } };
+type Payload = AskResult & { answer: string | null; llm: { enabled: boolean; reason: string; model?: string } };
 
 const ROUTE_LABEL: Record<string, string> = {
   lookup: "작품·인물 조회",
@@ -227,10 +227,23 @@ export default function Home() {
                 </div>
               )}
 
-              <div className="card pending">
-                <h2>답변 문장</h2>
-                <p>{res.llm.reason}</p>
-              </div>
+              {/* 답변은 근거 위에 둔다. 다만 근거를 지우지 않는다 —
+                  모델이 무엇을 보고 말했는지 확인할 수 있어야 한다. */}
+              {res.answer ? (
+                <div className="card answer">
+                  <h2>답변</h2>
+                  <p>{res.answer}</p>
+                  <p className="src">
+                    아래 <b>근거 {res.evidence.length}편</b>만 보고 쓴 문장입니다
+                    {res.llm.model && ` · ${res.llm.model}`}
+                  </p>
+                </div>
+              ) : (
+                <div className="card pending">
+                  <h2>답변 문장</h2>
+                  <p>{res.llm.reason}</p>
+                </div>
+              )}
 
 
               <div className="films">
