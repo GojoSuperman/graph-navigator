@@ -344,5 +344,9 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
   background: rgba(11, 13, 18, 0.9); border: 1px solid #3a4354;
   pointer-events: none;
 }
+.dock-help strong {
+  font-size: 12px; font-weight: 700; color: #64b5ff; white-space: nowrap;
+  padding-right: 12px; border-right: 1px solid #3a4354;
+}
 .dock-help span { font-size: 12px; color: #aab4c4; white-space: nowrap; }
 .dock-help b { color: #fff; font-weight: 700; margin-right: 4px; }

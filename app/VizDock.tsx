@@ -109,11 +109,12 @@ export default function VizDock() {
         </div>
       </div>
       <div className="dock-stage" ref={hostRef}>
-        {/* 조작 방법 — 3D 는 눌러 보기 전엔 뭘 할 수 있는지 알 수 없다 */}
-        <div className="dock-help" aria-label="조작 방법">
-          <span><b>끌기</b> 회전</span>
+        {/* 마우스 사용법 — 3D 는 눌러 보기 전엔 뭘 할 수 있는지 알 수 없다 */}
+        <div className="dock-help" aria-label="마우스 사용법">
+          <strong>마우스 사용법</strong>
+          <span><b>왼쪽 클릭</b> 회전</span>
           <span><b>휠</b> 확대·축소</span>
-          <span><b>오른쪽 끌기</b> 이동</span>
+          <span><b>오른쪽 클릭</b> 이동</span>
         </div>
 
         {!subject && !busy && (
