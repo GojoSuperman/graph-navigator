@@ -118,8 +118,10 @@ export default function VizDock() {
 
         {!subject && !busy && (
           <p className="dock-empty">
-            왼쪽에서 작품·인물을 고르거나 질문하면
-            <br />여기에 <b>건너간 다리</b>가 그려집니다
+            <span>
+              왼쪽에서 작품·인물을 고르거나 질문하면
+              <br />여기에 <b>건너간 다리</b>가 그려집니다
+            </span>
           </p>
         )}
       </div>

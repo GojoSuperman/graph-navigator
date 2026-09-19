@@ -19,9 +19,9 @@
   :root:not([data-theme="light"]) {
     --bg: #0f1116;
     --panel: #181b22;
-    --ink: #e9ecf2;
-    --muted: #98a2b3;
-    --line: #2a303a;
+    --ink: #f2f5f9;
+    --muted: #b3bdcc;
+    --line: #333c4a;
     --accent: #6ea8ff;
     --accent-soft: #16233a;
     --gold: #e0b44a;
@@ -49,7 +49,8 @@ a { color: var(--accent); }
   position: sticky; top: 0; z-index: 10;
 }
 .nav .brand { font-weight: 800; font-size: 14.5px; margin-right: 10px; letter-spacing: -0.3px; }
-.nav a { font-size: 13.5px; font-weight: 600; text-decoration: none; color: var(--muted); padding: 6px 12px; border-radius: 7px; }
+.nav a { font-size: 14px; font-weight: 600; text-decoration: none; color: var(--ink); padding: 6px 12px; border-radius: 7px; }
+.nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .nav a:hover { color: var(--accent); background: var(--accent-soft); }
 .nav .src { margin-left: auto; font-size: 11.5px; color: var(--muted); }
 
@@ -66,7 +67,7 @@ form.askbox input {
 }
 form.askbox input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 form.askbox button {
-  padding: 13px 22px; font: inherit; font-size: 15px; font-weight: 600;
+  padding: 13px 24px; font: inherit; font-size: 15.5px; font-weight: 700;
   color: #fff; background: var(--accent); border: 0; border-radius: var(--radius); cursor: pointer;
 }
 form.askbox button:disabled { opacity: 0.55; cursor: progress; }
@@ -74,21 +75,24 @@ form.askbox button:disabled { opacity: 0.55; cursor: progress; }
 .samples { margin: 12px 0 0; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .samples span { font-size: 12.5px; color: var(--muted); }
 .samples button {
-  font: inherit; font-size: 12.5px; padding: 5px 11px; cursor: pointer;
-  color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; border-radius: 999px;
+  font: inherit; font-size: 13px; font-weight: 600; padding: 6px 13px; cursor: pointer;
+  color: var(--accent); background: var(--accent-soft);
+  border: 1px solid var(--line); border-radius: 999px;
 }
-.samples button:hover { border-color: var(--accent); }
+.samples button:hover { border-color: var(--accent); background: var(--panel); }
+.samples button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.samples span { font-size: 13px; }
 
 .meta { margin-top: 28px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .badge {
   font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
   background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent);
 }
-.meta .why { font-size: 13px; color: var(--muted); }
+.meta .why { font-size: 13.5px; color: var(--muted); }
 
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; margin-top: 14px; }
 .card h2 { font-size: 15px; margin: 0 0 10px; }
-.card .hint { margin: 0 0 10px; font-size: 12.5px; color: var(--muted); }
+.card .hint { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
 .stop { background: var(--stop-bg); border-color: var(--stop-line); color: var(--stop-ink); }
 .stop h2 { color: var(--stop-ink); }
 .stop p { margin: 0; font-size: 14.5px; }
@@ -104,11 +108,12 @@ form.askbox button:disabled { opacity: 0.55; cursor: progress; }
 .answers { display: flex; flex-wrap: wrap; gap: 8px; }
 .ansItem {
   display: inline-flex; align-items: baseline; gap: 7px;
-  padding: 9px 14px; border-radius: 999px;
+  padding: 10px 15px; border-radius: 999px;
   background: var(--accent-soft); border: 1px solid var(--accent); color: var(--accent);
-  font-size: 14.5px; font-weight: 700; text-decoration: none;
+  font-size: 15px; font-weight: 700; text-decoration: none;
 }
-.ansItem em { font-style: normal; font-weight: 500; font-size: 12.5px; color: var(--muted); }
+.ansItem:hover { background: var(--panel); }
+.ansItem em { font-style: normal; font-weight: 500; font-size: 13px; color: var(--muted); }
 
 /* 근거 경로 */
 .chain { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; margin-top: 8px; }
@@ -129,9 +134,9 @@ form.askbox button:disabled { opacity: 0.55; cursor: progress; }
 .film h3 a:hover { text-decoration: underline; }
 .film .tag { font-size: 11px; padding: 2px 7px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); }
 .film .tag.seed { border-color: var(--accent); color: var(--accent); }
-.film .sub { font-size: 12.5px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+.film .sub { font-size: 13px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
 .film .awards { margin-top: 7px; font-size: 12.5px; color: var(--gold); }
-.film .body { margin-top: 8px; font-size: 14px; line-height: 1.7; color: var(--ink); }
+.film .body { margin-top: 8px; font-size: 14.5px; line-height: 1.75; color: var(--ink); }
 .film .body.clip { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .film .more { margin-top: 5px; font: inherit; font-size: 12.5px; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
 .err { color: var(--stop-ink); background: var(--stop-bg); border-color: var(--stop-line); }
@@ -166,10 +171,11 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
   white-space: nowrap;
   padding: calc(3px * var(--viz-zoom)) calc(8px * var(--viz-zoom));
   border-radius: 6px;
-  background: rgba(11, 13, 18, 0.85); border: 1px solid #2a303a; color: #d8dee8;
+  background: rgba(8, 10, 14, 0.92); border: 1px solid #47526536; color: #eef2f7;
+  font-weight: 600;
   transition: opacity 0.2s linear;
 }
-.viz-label.seed { border-color: #64b5ff; color: #fff; font-weight: 700; }
+.viz-label.seed { border-color: #64b5ff; color: #fff; font-weight: 800; }
 /* 다리 이름 — 선 한가운데. 이 화면의 주인공이다. */
 .viz-via {
   pointer-events: none; transform: translate(-50%, -50%);
@@ -180,7 +186,7 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
   background: rgba(11, 13, 18, 0.9); border: 1px solid #7ee787; color: #7ee787;
   transition: opacity 0.2s linear;
 }
-.viz-tier { pointer-events: none; font-size: calc(11px * var(--viz-zoom)); font-weight: 700; color: #8b95a5; opacity: 0.8; }
+.viz-tier { pointer-events: none; font-size: calc(11.5px * var(--viz-zoom)); font-weight: 700; color: #7c8798; opacity: 1; letter-spacing: 0.3px; }
 
 .viz-side { background: var(--panel); border-left: 1px solid var(--line); padding: 16px; overflow-y: auto; }
 @media (max-width: 900px) { .viz-side { border-left: 0; border-top: 1px solid var(--line); } }
@@ -252,38 +258,44 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 @media (max-width: 860px) { .dock { height: 60vh; border-left: 0; border-top: 1px solid var(--line); } }
 
 .dock-bar {
-  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
-  border-bottom: 1px solid #222833; background: #0e1118;
+  display: flex; align-items: center; gap: 10px; padding: 9px 11px;
+  border-bottom: 1px solid #2f3746; background: #12161e;
 }
 
 /* 집중형 / 전경형 */
 .dock-switch {
-  display: flex; gap: 2px; padding: 3px;
-  background: #151a23; border: 1px solid #2a303a; border-radius: 9px;
+  display: flex; gap: 3px; padding: 3px; flex: none;
+  background: #0b0d12; border: 1px solid #3a4354; border-radius: 9px;
 }
 .dock-switch button {
-  font: inherit; font-size: 12px; font-weight: 600; padding: 5px 13px; cursor: pointer;
-  color: #98a2b3; background: transparent; border: 0; border-radius: 7px;
+  font: inherit; font-size: 13px; font-weight: 700; padding: 6px 15px; cursor: pointer;
+  color: #c6cedb; background: transparent; border: 0; border-radius: 7px;
 }
-.dock-switch button:hover { color: #d8dee8; }
-.dock-switch button.on { background: #64b5ff; color: #0b0d12; }
+.dock-switch button:hover { color: #fff; background: #1c2431; }
+.dock-switch button.on { background: #64b5ff; color: #06264a; }
+.dock-switch button:focus-visible { outline: 2px solid #64b5ff; outline-offset: 2px; }
 
 /* 지금 무엇을 보고 있는지 */
 .dock-title {
   flex: 1 1 120px; min-width: 0; text-align: center;
-  padding: 6px 14px; border-radius: 999px;
-  background: #151a23; border: 1px solid #2a303a; color: #c6cedb;
-  font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 7px 14px; border-radius: 999px;
+  background: #0b0d12; border: 1px solid #3a4354; color: #e4e9f1;
+  font-size: 13px; font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
 
 .dock-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
 .dock-stage canvas { display: block; }
 .dock-empty {
-  position: absolute; inset: 0; display: grid; place-items: center; text-align: center;
-  margin: 0; padding: 0 20px; color: #6b7585; font-size: 12.5px; line-height: 1.8;
+  position: absolute; inset: 0; display: grid; place-items: center;
+  margin: 0; padding: 0 20px; pointer-events: none;
 }
-.dock-empty b { color: #7ee787; }
+/* 텍스트를 하나로 감싸야 한다 — 감싸지 않으면 조각마다 grid 항목이 되어 세로로 흩어진다 */
+.dock-empty span {
+  text-align: center; color: #aab4c4; font-size: 13.5px; line-height: 1.9;
+}
+.dock-empty b { color: #7ee787; font-weight: 700; }
 
 /* 2단이 되었으니 본문 폭 제한을 푼다 */
 .shell-main .wrap { max-width: 760px; }
@@ -297,12 +309,12 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 
 /* 3D 범례 — 막대 오른쪽 끝. 가로 한 줄이라 줄바꿈되지 않는다. */
 .dock-legend {
-  display: flex; align-items: center; gap: 11px; flex: none;
-  padding: 5px 10px; border-radius: 8px;
-  background: #151a23; border: 1px solid #2a303a;
+  display: flex; align-items: center; gap: 12px; flex: none;
+  padding: 6px 11px; border-radius: 8px;
+  background: #0b0d12; border: 1px solid #3a4354;
 }
-.dock-legend span { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #c6cedb; white-space: nowrap; }
-.dock-legend .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.dock-legend span { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #e4e9f1; white-space: nowrap; }
+.dock-legend .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
 .dock-legend .dot.ko { background: #64b5ff; box-shadow: 0 0 5px #64b5ff88; }
 .dock-legend .dot.fo { background: #ffb86b; box-shadow: 0 0 5px #ffb86b88; }
 .dock-legend .dot.br { background: #7ee787; box-shadow: 0 0 5px #7ee78788; }
@@ -326,11 +338,11 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 
 /* 3D 조작 방법 — 무대 좌측 하단 */
 .dock-help {
-  position: absolute; left: 10px; bottom: 10px; z-index: 3;
-  display: flex; gap: 12px; flex-wrap: wrap;
-  padding: 6px 11px; border-radius: 8px;
-  background: rgba(11, 13, 18, 0.7); border: 1px solid #222833;
+  position: absolute; left: 12px; bottom: 12px; z-index: 3;
+  display: flex; gap: 14px; flex-wrap: wrap;
+  padding: 7px 12px; border-radius: 8px;
+  background: rgba(11, 13, 18, 0.9); border: 1px solid #3a4354;
   pointer-events: none;
 }
-.dock-help span { font-size: 10.5px; color: #8b95a5; white-space: nowrap; }
-.dock-help b { color: #c6cedb; font-weight: 600; margin-right: 3px; }
+.dock-help span { font-size: 12px; color: #aab4c4; white-space: nowrap; }
+.dock-help b { color: #fff; font-weight: 700; margin-right: 4px; }
