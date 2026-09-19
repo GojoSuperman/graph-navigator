@@ -282,17 +282,47 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 @media (max-width: 860px) { .dock { height: 60vh; border-left: 0; border-top: 1px solid var(--line); } }
 
 .dock-bar {
-  display: flex; align-items: center; gap: 10px; padding: 7px 10px;
-  border-bottom: 1px solid #222833; background: #0e1118;
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+  border-bottom: 1px solid #222833; background: #0e1118; flex-wrap: wrap;
 }
-.dock-bar button {
-  font: inherit; font-size: 12px; font-weight: 600; padding: 4px 10px; cursor: pointer;
-  color: #98a2b3; background: transparent; border: 1px solid #2a303a; border-radius: 6px;
+.dock-fold {
+  font: inherit; font-size: 12px; font-weight: 600; padding: 5px 9px; cursor: pointer;
+  color: #98a2b3; background: transparent; border: 1px solid #2a303a; border-radius: 7px;
 }
-.dock-bar button:hover { color: #d8dee8; border-color: #3a424f; }
+.dock-fold:hover { color: #d8dee8; border-color: #3a424f; }
+
+/* 집중형 / 전경형 */
+.dock-switch {
+  display: flex; gap: 2px; padding: 3px;
+  background: #151a23; border: 1px solid #2a303a; border-radius: 9px;
+}
+.dock-switch button {
+  font: inherit; font-size: 12px; font-weight: 600; padding: 5px 13px; cursor: pointer;
+  color: #98a2b3; background: transparent; border: 0; border-radius: 7px;
+}
+.dock-switch button:hover { color: #d8dee8; }
+.dock-switch button.on { background: #64b5ff; color: #0b0d12; }
+
+/* 지금 무엇을 보고 있는지 */
 .dock-title {
-  font-size: 12px; color: #8b95a5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1 1 120px; min-width: 0; text-align: center;
+  padding: 6px 14px; border-radius: 999px;
+  background: #151a23; border: 1px solid #2a303a; color: #c6cedb;
+  font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+
+/* 범례 — 무대 위가 아니라 막대에. 회전해도 늘 보인다 */
+.dock-legend {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 7px 11px; border-radius: 9px;
+  background: #151a23; border: 1px solid #2a303a;
+}
+.dock-legend span { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #c6cedb; white-space: nowrap; }
+.dock-legend .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.dock-legend .dot.ko { background: #64b5ff; box-shadow: 0 0 6px #64b5ff88; }
+.dock-legend .dot.fo { background: #ffb86b; box-shadow: 0 0 6px #ffb86b88; }
+.dock-legend .dot.br { background: #7ee787; box-shadow: 0 0 6px #7ee78788; }
+
 .dock-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
 .dock-stage canvas { display: block; }
 .dock-empty {
