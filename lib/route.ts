@@ -842,9 +842,19 @@ export function checkPremise(question: string, g: MovieGraph): PremiseCheck {
    * 사용자를 속인다.
    *
    * 인물의 작품을 묻는 질문에서 **기준점이 하나도 없으면** 답할 수 없다.
+   *
+   * 다만 **"지목했는데 없다" 와 "애초에 아무도 지목하지 않았다" 는 다르다.**
+   * 실측 — "제주도를 **배경으로 만든 영화** 알려줘" 가 '만든 영화' 때문에
+   * 인물의 작품 질문으로 분류됐고, 인물이 없으니 **"전제가 사실과 다릅니다"** 라고
+   * 답했다. 전제가 틀린 게 아니라 **질문을 잘못 읽은 것**이다 —
+   * 《계춘할망》·《지슬》·《올레》가 다 말뭉치에 있다.
+   *
+   * 누군가를 지목한 질문은 그 주체가 **주격·소유격 조사**를 달고 나온다
+   * ("브래드 피트**가** 나온", "봉준호**의** 영화"). 그게 없으면 지목이 아니다.
    */
+  const namesSubject = /[가-힣]{2,5}(가|이|의)\s/.test(question) || /감독|배우/.test(question);
   const r = route(question);
-  if ((r.route === "filmography" || r.route === "cast") &&
+  if (namesSubject && (r.route === "filmography" || r.route === "cast") &&
       !peopleIn(question, g).length && !titlesIn(question, g).length) {
     return {
       broken: true,
