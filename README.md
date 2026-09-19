@@ -309,8 +309,8 @@ pnpm ask "송강호와 이선균이 함께 출연한 영화는?"
 pnpm eval       # 그래프 vs BM25
 
 pnpm fetch      # TMDB 수집 (한 번, 40분)
-pnpm awards                   # 수상 (위키데이터, 키 불필요)
-pnpm graph                    # 그래프 구축
+pnpm awards     # 수상 — 위키데이터, 키 불필요
+pnpm graph      # 그래프 구축
 ```
 
 `.env.local` 에 두 개를 둔다.
