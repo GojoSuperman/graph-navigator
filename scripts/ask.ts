@@ -8,7 +8,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { MovieGraph, collectEvidence, DEFAULT_BUDGET, describePath } from "../lib/graph.ts";
-import { route, findSeeds, canAnswer, seedsFromCharacter, commonPeople, peopleIn, titlesIn, seedsFromPeopleIntersection, mentions } from "../lib/route.ts";
+import { route, findSeeds, canAnswer, seedsFromCharacter, commonPeople, peopleIn, titlesIn, seedsFromPeopleIntersection, mentions, checkPremise } from "../lib/route.ts";
 import { nameMatches } from "../lib/romanize.ts";
 
 const q = process.argv.slice(2).join(" ").trim();
@@ -50,6 +50,18 @@ for (const m of got.movies) {
     }
   }
 }
+// ── 전제 검사 ──────────────────────────────────────────────────────
+// 찾아봤는데 전제가 사실이 아니면, 근거를 늘어놓는 대신 그렇다고 말한다.
+const premise = checkPremise(q, g);
+if (premise.broken) {
+  L(`🚫 ${premise.reason}`);
+  if (premise.instead) L(`   ${premise.instead}`);
+  L(`   찾아본 결과이지 범위 밖이라는 뜻은 아닙니다.`);
+  L("─".repeat(72));
+  L();
+  process.exit(0);
+}
+
 // ── 교집합 답 ──────────────────────────────────────────────────────
 const cp = commonPeople(q, g);
 if (cp.people.length) {

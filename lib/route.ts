@@ -119,9 +119,23 @@ const norm = (s: string) => s.replace(/\s+/g, "").toLowerCase();
 export function mentions(question: string, name: string): boolean {
   const n = norm(name);
   if (n.length < 2) return false;
-  for (const raw of question.split(/\s+/)) {
-    const tok = norm(raw.replace(/^[^0-9A-Za-z가-힣]+/, ""));
-    if (tok.startsWith(n)) return true;
+
+  const toks = question.split(/\s+/).map((raw) => norm(raw.replace(/^[^0-9A-Za-z가-힣]+/, "")));
+
+  // 한 어절 안에서 시작하는 경우 — "송강호와", "기생충에서"
+  if (toks.some((t) => t.startsWith(n))) return true;
+
+  /**
+   * 제목은 어절을 넘어간다 — 《왕의 남자》, 《좋은 놈, 나쁜 놈, 이상한 놈》.
+   * 어절 하나만 보면 못 찾으므로, **어절 경계에서 시작해** 뒤쪽을 이어 붙여 본다.
+   * 어절 중간에서 시작하는 일치는 여전히 배제된다 (그게 '서기'·'국형' 사고의 원인이었다).
+   */
+  for (let i = 0; i < toks.length; i++) {
+    let acc = "";
+    for (let j = i; j < toks.length && acc.length < n.length + 8; j++) {
+      acc += toks[j];
+      if (acc.startsWith(n)) return true;
+    }
   }
   return false;
 }
@@ -461,6 +475,57 @@ export function findSeeds(question: string, g: MovieGraph, top = 3): string[] {
   }
 
   return [...new Set([...people, ...seedsFromGenre(question, g), ...seedsFromKeywords(question, g, top)])];
+}
+
+/**
+ * 질문의 **전제**가 사실인가.
+ *
+ * "추격자·황해·곡성에 모두 출연한 배우는?" — 실제로는 **그런 배우가 없다.**
+ * 겹치는 사람은 감독 나홍진뿐이다. 이때 근거 10편을 늘어놓으면
+ * 답하지 않으면서 답하는 척하는 것이 된다.
+ *
+ * 거절(out_of_scope)과는 다르다. 거절은 "이 도구가 다룰 범위가 아니다" 이고,
+ * 이쪽은 **"찾아봤는데 전제가 사실이 아니다"** 다. 찾아본 결과를 근거로 말해야 하므로
+ * 오히려 더 강한 주장이다. 공통점은 하나 — **답을 지어내지 않는다.**
+ */
+export interface PremiseCheck {
+  /** 전제가 무너졌는가 */
+  broken: boolean;
+  reason: string;
+  /** 대신 말해 줄 수 있는 것 (감독만 겹친다든지) */
+  instead?: string;
+}
+
+export function checkPremise(question: string, g: MovieGraph): PremiseCheck {
+  const asksActor = /배우|출연|연기/.test(question);
+
+  // ① 작품 교집합 — "A·B·C에 모두 출연한 배우"
+  const titles = titlesIn(question, g);
+  if (asksActor && titles.length >= 2) {
+    const cp = commonPeople(question, g);
+    const actors = cp.people.filter((p) => p.acted !== false);
+    if (!actors.length) {
+      const crew = cp.people.filter((p) => p.acted === false).map((p) => p.name);
+      return {
+        broken: true,
+        reason: `${titles.slice(0, 4).map((m) => `《${m.title}》`).join(" ")} 에 **모두 출연한 배우는 없습니다**`,
+        instead: crew.length ? `모두 참여한 사람은 ${crew.slice(0, 3).join(", ")} (제작진)` : undefined,
+      };
+    }
+  }
+
+  // ② 인물 교집합 — "A와 B가 함께 나온 영화"
+  const ps = peopleIn(question, g);
+  if (ps.length >= 2 && /함께|같이|모두/.test(question)) {
+    if (!seedsFromPeopleIntersection(question, g, 1).length) {
+      return {
+        broken: true,
+        reason: `${ps.slice(0, 2).map((p) => p.name).join(" 와 ")} 가 **함께 나온 작품이 없습니다**`,
+      };
+    }
+  }
+
+  return { broken: false, reason: "" };
 }
 
 /** 근거가 없으면 LLM 을 부르지 않는다 (law-navigator §7-1 과 같은 자리) */

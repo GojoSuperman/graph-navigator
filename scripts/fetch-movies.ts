@@ -10,8 +10,17 @@
  *
  * 그래서 법령에서 "위임을 실제로 받는 고시만 골라 넣은" 것과 같은 원리로,
  * **인물을 따라 1홉 확장**한다.
- *   ① 한국 영화 (인기·평점 상위)
+ *   ① 한국 영화 — **투표 20개 이상 전부** (연대 무관)
  *   ② ①에 나온 인물의 외국 작품
+ *   ③ 평가셋이 요구하는 작품 — 인기와 무관하게 **지정 수집**
+ *
+ * ── 왜 투표 수로 자르나 ──────────────────────────────────────────────
+ * "초기 영화부터 다 넣으면?" 을 실측했다. 한국 영화는 TMDB 에 14,546편 있지만
+ * 투표 20개 이상은 1,049편뿐이고, **1980년 이전 1,931편 중에는 9편**이다.
+ * 나머지는 제목만 있고 줄거리도 출연진도 비어 있다.
+ *
+ * 이 프로젝트는 **관계**로 답한다. 출연진이 없으면 노드는 들어와도 **선이 안 생긴다.**
+ * 연대로 자르는 대신 "선이 생기는가" 로 자르는 이유다.
  */
 
 import { writeFile, mkdir } from "node:fs/promises";
@@ -24,7 +33,7 @@ if (!KEY) {
 }
 
 const OUT = join(import.meta.dirname, "..", "data");
-const PAGES = Number(process.argv[2] ?? 10);      // 한국 영화 페이지 (20편/페이지)
+const PAGES = Number(process.argv[2] ?? 0) || Infinity;  // 0 = 끝까지
 const MIN_VOTES = 20;                              // 표가 너무 적으면 정보가 부실하다
 const EXPAND_MIN_FILMS = 2;                        // 말뭉치에 2편 이상 있는 인물만 확장
 const EXPAND_MIN_VOTES = 100;                      // 확장으로 들어올 외국 작품의 하한
@@ -60,20 +69,56 @@ console.log(`\n장르 ${GENRE.size}종: ${[...GENRE.values()].slice(0, 6).join("
 // ── ① 한국 영화 ──────────────────────────────────────────────────────
 const movies = new Map<number, any>();
 let skipped = 0;
-for (let p = 1; p <= PAGES; p++) {
+let lastPage = 1;
+for (let p = 1; p <= Math.min(PAGES, lastPage); p++) {
   const d = await api("/discover/movie", {
     with_origin_country: "KR",
     sort_by: "popularity.desc",
     include_adult: "false",
+    "vote_count.gte": String(MIN_VOTES),
     page: String(p),
   });
+  lastPage = Math.min(d.total_pages ?? 1, 500);
   for (const m of d.results) {
     if (usable(m, MIN_VOTES)) movies.set(m.id, m);
     else skipped++;
   }
+  if (p % 10 === 0) process.stdout.write(`\r   ${p}/${lastPage}페이지…`);
 }
+console.log(`\r   ${Math.min(PAGES, lastPage)}페이지 훑음`);
 const koreanCount = movies.size;
 console.log(`\n① 한국 영화  ${koreanCount}편 수집 (부적격 ${skipped}편 제외 — 줄거리 없음·표 부족)`);
+
+// ── ①-b 평가셋이 요구하는 작품 — 인기와 무관하게 지정 수집 ───────────
+//
+// "정답이 말뭉치에 없어서 틀렸다" 는 상황은 측정을 무의미하게 만든다.
+// 《마스터》(2016)·《생일》(2019) 이 실제로 그랬다.
+let pinnedAdded = 0;
+try {
+  const gold = JSON.parse(await (await import("node:fs/promises")).readFile(join(OUT, "golden.json"), "utf-8"));
+  const wanted = new Set<string>();
+  for (const it of gold.items ?? []) {
+    for (const t of [it.needMovie, ...(it.needMovies ?? [])]) if (t) wanted.add(String(t));
+  }
+  for (const title of wanted) {
+    // ⚠️ startsWith 로 "이미 있다" 고 판정하면 안 된다 — 《마스터 오브 디스가이즈》를
+    //    《마스터》로 착각해 정작 필요한 2016년작을 건너뛴다. **정확히** 같아야 한다.
+    const found = [...movies.values()].some((m) => m.title === title);
+    if (found) continue;
+    const r = await api("/search/movie", { query: title, include_adult: "false" });
+    // 제목이 정확히 맞고 한국어 원어인 것을 우선한다
+    const hit = (r.results ?? []).find((m: any) => m.title === title && m.original_language === "ko")
+      ?? (r.results ?? []).find((m: any) => m.title === title);
+    if (hit && !movies.has(hit.id)) {
+      movies.set(hit.id, hit);
+      pinnedAdded++;
+      console.log(`\n   + ${hit.title} (${String(hit.release_date).slice(0, 4)}) 투표 ${hit.vote_count}`);
+    }
+  }
+  console.log(`\n①-b 평가셋 지정 수집 — ${pinnedAdded}편 추가 (요청 ${wanted.size}편 중 이미 있던 것 제외)`);
+} catch {
+  console.log("\n①-b 평가셋 없음 — 지정 수집 건너뜀");
+}
 
 // ── 크레딧 ───────────────────────────────────────────────────────────
 console.log("\n② 크레딧 조회…");

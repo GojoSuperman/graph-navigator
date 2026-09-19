@@ -15,7 +15,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { MovieGraph, collectEvidence, DEFAULT_BUDGET } from "../lib/graph.ts";
 import { BM25 } from "../lib/bm25.ts";
-import { route, findSeeds, canAnswer, commonPeople } from "../lib/route.ts";
+import { route, findSeeds, canAnswer, commonPeople, checkPremise } from "../lib/route.ts";
 import { nameMatches } from "../lib/romanize.ts";
 
 const DATA = join(import.meta.dirname, "..", "data");
@@ -27,23 +27,29 @@ const bm25 = new BM25(
   [...g.movies.values()].map((m) => ({ id: m.id, title: `${m.title} ${m.originalTitle}`, text: `${m.overview} ${m.genres.join(" ")}` })),
 );
 
-const REFUSE = ["out_of_scope"];
+// 채점에서 빼는 유형 — 기준 작품을 데려오는 것이 목표가 아닌 문항들
+const REFUSE = ["out_of_scope", "no-answer"];
 const titleOf = (id: string) => g.movie(id)?.title ?? id;
 
 type Row = {
   id: string; kind: string; split: string; question: string;
-  need: string | null; answer: string;
-  route: string; refused: boolean;
+  need: string[]; answer: string;
+  route: string; refused: boolean; premiseBroken: boolean;
   graphHit: boolean; bm25Hit: boolean; personHit: boolean;
   graphGot: string[];
 };
 
-/** 기준 작품이 근거에 들어왔는가 */
-const hasMovie = (ids: string[], title: string) =>
-  ids.some((id) => {
-    const t = g.movie(id)?.title ?? "";
-    return t === title || t.startsWith(title) || title.startsWith(t);
-  });
+/**
+ * 기준 작품이 근거에 들어왔는가.
+ * 정답이 여럿일 수 있으므로(교집합 질문) **하나라도** 들어오면 맞은 것으로 친다.
+ */
+const hasMovie = (ids: string[], titles: string[]) =>
+  titles.some((title) =>
+    ids.some((id) => {
+      const t = g.movie(id)?.title ?? "";
+      return t === title || t.startsWith(title) || title.startsWith(t);
+    }),
+  );
 
 const rows: Row[] = [];
 for (const q of gold.items) {
@@ -81,10 +87,11 @@ for (const q of gold.items) {
 
   rows.push({
     id: q.id, kind: q.kind, split: q.split, question: q.question,
-    need: q.needMovie || null, answer: q.answer,
+    need: q.needMovies ?? [], answer: q.answer,
     route: r.route, refused: !gate.ok,
-    graphHit: q.needMovie ? hasMovie(graphGot, q.needMovie) : false,
-    bm25Hit: q.needMovie ? hasMovie(bm25Got, q.needMovie) : false,
+    premiseBroken: checkPremise(q.question, g).broken,
+    graphHit: (q.needMovies ?? []).length ? hasMovie(graphGot, q.needMovies) : false,
+    bm25Hit: (q.needMovies ?? []).length ? hasMovie(bm25Got, q.needMovies) : false,
     personHit,
     graphGot,
   });
@@ -97,14 +104,14 @@ L("═".repeat(78));
 L(`  컨텍스트 재현율 — 그래프 탐색 vs BM25   (근거 예산 ${DEFAULT_BUDGET.maxMovies}편)`);
 L("═".repeat(78));
 
-const scored = rows.filter((r) => !REFUSE.includes(r.kind) && r.need);
+const scored = rows.filter((r) => !REFUSE.includes(r.kind) && r.need.length);
 L("\n  문항   유형          기대작품          그래프 BM25  라우팅");
 L("  " + "─".repeat(70));
 let last = "";
 for (const r of scored) {
   if (r.split !== last) { L(`  ── ${gold.splits[r.split] ? r.split : r.split} ${"─".repeat(46)}`); last = r.split; }
   const mark = r.graphHit && !r.bm25Hit ? "▲" : !r.graphHit && r.bm25Hit ? "▼" : " ";
-  L(`  ${mark} ${r.id.padEnd(5)} ${r.kind.padEnd(12)} ${String(r.need).slice(0, 14).padEnd(16)} ${(r.graphHit ? " ✅" : " ❌").padEnd(5)} ${(r.bm25Hit ? "✅" : "❌").padEnd(5)} ${r.route}`);
+  L(`  ${mark} ${r.id.padEnd(5)} ${r.kind.padEnd(12)} ${r.need.join("/").slice(0, 14).padEnd(16)} ${(r.graphHit ? " ✅" : " ❌").padEnd(5)} ${(r.bm25Hit ? "✅" : "❌").padEnd(5)} ${r.route}`);
 }
 
 L("\n  [ 유형별 — 기준 작품을 근거로 데려왔는가 ]");
@@ -129,10 +136,24 @@ const withPerson = rows.filter((r) => rows.find((x) => x.id === r.id) && gold.it
 const ph = withPerson.filter((r) => r.personHit).length;
 L(`\n  [ 사람까지 짚었는가 ] ${ph}/${withPerson.length} (${pct(ph, withPerson.length)})`);
 
-L("\n  [ 거절이 정답인 문항 ]");
-const oos = rows.filter((r) => REFUSE.includes(r.kind));
+L("\n  [ 거절이 정답인 문항 — 이 도구의 범위 밖 ]");
+const oos = rows.filter((r) => r.kind === "out_of_scope");
 for (const r of oos) L(`    ${r.refused ? "✅ 거절" : `❌ 답하려 함 (${r.graphGot.length}편)`}   ${r.id}  ${r.question.slice(0, 34)}`);
 L(`    ${oos.filter((r) => r.refused).length}/${oos.length} 정상 거절`);
+
+// ── 전제가 무너진 질문 ────────────────────────────────────────────────
+//
+// "추격자·황해·곡성에 모두 출연한 배우는?" — 그런 배우가 **없다**.
+// 근거를 늘어놓으면 답하지 않으면서 답하는 척하는 것이 된다.
+// 거절과는 다르다. 이쪽은 **찾아본 결과**이므로 더 강한 주장이다.
+const na = rows.filter((r) => r.kind === "no-answer");
+if (na.length) {
+  L("\n  [ 전제가 사실이 아닌 문항 — '그런 배우는 없습니다' 가 정답 ]");
+  for (const r of na) {
+    L(`    ${r.premiseBroken ? "✅ 없다고 말함" : `❌ 답하려 함 (${r.graphGot.length}편)`}   ${r.id}  ${r.question.slice(0, 40)}`);
+  }
+  L(`    ${na.filter((r) => r.premiseBroken).length}/${na.length} 정상`);
+}
 
 L("\n  [ 그래프가 놓친 것 ]");
 let missed = 0;
