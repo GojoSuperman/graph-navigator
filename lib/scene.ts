@@ -121,15 +121,26 @@ export function createScene(
   scene.add(live);
   type Anim = { mesh?: THREE.Mesh; line?: THREE.Line; a: THREE.Vector3; b: THREE.Vector3; at: number };
   let anims: Anim[] = [];
+  /**
+   * 선을 따라 흐르는 빛.
+   *
+   * 선이 한 번 그려지고 멈추면 **다리가 정지한 그림**이 된다.
+   * 작은 빛이 계속 흘러가면 "이쪽에서 저쪽으로 건넌다" 는 방향이 눈에 남는다.
+   * 선 자체를 애니메이션하는 대신(매 프레임 정점 갱신) 구 하나를 굴린다 — 더 싸다.
+   */
+  type Pulse = { mesh: THREE.Mesh; a: THREE.Vector3; b: THREE.Vector3; offset: number; at: number };
+  let pulses: Pulse[] = [];
   let t0 = 0;
 
   function clear() {
     picks.length = 0;
+    pulses = [];
     for (const o of [...live.children]) {
       live.remove(o);
       o.traverse?.((c) => {
         const m = c as THREE.Mesh;
-        m.geometry?.dispose?.();
+        // sphere·pulseGeo 는 모든 노드가 공유한다. 여기서 버리면 다음 질문에서 터진다.
+        if (m.geometry !== sphere && m.geometry !== pulseGeo) m.geometry?.dispose?.();
         const mat = m.material as THREE.Material | THREE.Material[] | undefined;
         if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
         else mat?.dispose?.();
@@ -140,6 +151,7 @@ export function createScene(
   }
 
   const sphere = new THREE.SphereGeometry(1, 20, 16);
+  const pulseGeo = new THREE.SphereGeometry(1.15, 10, 8);
 
   /** 지금 화면에 맞춰야 할 범위 */
   let fitted: ReturnType<typeof boundsOf> | null = null;
@@ -206,6 +218,17 @@ export function createScene(
         );
         live.add(line);
         anims.push({ line, a: va, b: vb, at: start });
+
+        if (!reduceMotion()) {
+          const dot = new THREE.Mesh(
+            pulseGeo,
+            new THREE.MeshBasicMaterial({ color: BRIDGE, transparent: true, opacity: 0.95 }),
+          );
+          dot.visible = false;
+          live.add(dot);
+          // 선마다 시작점을 어긋나게 해 한꺼번에 몰려가지 않게 한다
+          pulses.push({ mesh: dot, a: va, b: vb, offset: (pulses.length * 0.37) % 1, at: start + STEP });
+        }
 
         // 다리 이름 — 선 한가운데
         if (e.via) {
@@ -309,6 +332,18 @@ export function createScene(
         an.mesh.scale.setScalar(Math.max(0.001, an.a.x * e));
       }
     }
+    // 흐르는 빛 — 선을 다 그린 뒤부터 반복해서 건너간다
+    for (const p of pulses) {
+      if (now < p.at) { p.mesh.visible = false; continue; }
+      p.mesh.visible = true;
+      const t = ((now - p.at) * 0.42 + p.offset) % 1;
+      p.mesh.position.lerpVectors(p.a, p.b, t);
+      // 양 끝에서 사그라들게 — 갑자기 나타났다 사라지면 눈에 거슬린다
+      const fade = Math.sin(t * Math.PI);
+      p.mesh.scale.setScalar(0.35 + fade * 0.85);
+      (p.mesh.material as THREE.MeshBasicMaterial).opacity = 0.25 + fade * 0.7;
+    }
+
     for (const o of live.children) {
       const el = (o as CSS2DObject).element;
       if (!el || el.dataset?.at === undefined) continue;
@@ -346,6 +381,8 @@ export function createScene(
       surface.removeEventListener("pointermove", onMove);
       cancelAnimationFrame(raf);
       clear();
+      sphere.dispose();
+      pulseGeo.dispose();
       controls.dispose();
       renderer.dispose();
       renderer.domElement.remove();
