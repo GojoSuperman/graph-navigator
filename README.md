@@ -344,5 +344,3 @@ This product uses the TMDB API but is not endorsed or certified by TMDB.
 [위키데이터](https://www.wikidata.org)로 조회했다.
 수상은 제목이 아니라 **TMDB ID(P4947)** 로 결합한다 — 《괴물》 같은 동명이작에서
 제목 대조는 조용히 틀린다.
-
-<!-- 자동 배포 확인 -->
