@@ -104,6 +104,9 @@ export const ROUTE_PLAN: Record<Route, EvidencePlan> = {
   bridge: BRIDGE,
   similar: { primary: ["ACTED_IN", "DIRECTED"], exempt: [] },
   award: { primary: ["ACTED_IN", "DIRECTED"], exempt: ["DIRECTED"] },
+  // 출연진을 묻는 질문은 **그 작품에서 더 나갈 필요가 없다.**
+  // 답이 크레딧 안에 있으므로 건너가면 오히려 답과 멀어진다.
+  cast: { primary: [], exempt: [] },
   out_of_scope: { primary: [], exempt: [] },
 };
 

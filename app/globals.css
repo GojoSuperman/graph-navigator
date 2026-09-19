@@ -306,3 +306,6 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 .dock-legend .dot.ko { background: #64b5ff; box-shadow: 0 0 5px #64b5ff88; }
 .dock-legend .dot.fo { background: #ffb86b; box-shadow: 0 0 5px #ffb86b88; }
 .dock-legend .dot.br { background: #7ee787; box-shadow: 0 0 5px #7ee78788; }
+
+/* 감독·각본은 출연진과 구분한다 */
+.ansItem.crew { background: var(--panel); border-color: var(--line); color: var(--muted); }

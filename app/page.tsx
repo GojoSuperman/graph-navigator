@@ -134,7 +134,8 @@ export default function Home() {
 
   const hasAnswer =
     res && !res.refused && !res.premiseBroken &&
-    (res.characters.length > 0 || res.commonMovies.length > 0 || res.commonPeople.length > 0);
+    (res.cast.length > 0 || res.characters.length > 0 ||
+      res.commonMovies.length > 0 || res.commonPeople.length > 0);
 
   return (
     <main className="wrap">
@@ -192,6 +193,12 @@ export default function Home() {
                 <div className="card">
                   <h2>답</h2>
                   <div className="answers">
+                    {res.cast.map((c) => (
+                      <Link key={c.id} className={c.role === "출연" ? "ansItem" : "ansItem crew"}
+                        href={`/browse?person=${encodeURIComponent(c.id)}`}>
+                        {c.name} <em>{c.role === "출연" ? (c.as ?? "출연") : c.role}</em>
+                      </Link>
+                    ))}
                     {res.characters.map((c) => (
                       <span key={`${c.person}${c.movie}`} className="ansItem">
                         {c.person} <em>《{c.movie}》 {c.as}</em>

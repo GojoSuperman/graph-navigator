@@ -53,6 +53,8 @@ export interface AskResult {
   commonPeople: { name: string; acted: boolean }[];
   /** 인물 교집합의 공통 작품 */
   commonMovies: { id: string; title: string; year: number | null }[];
+  /** 출연진 — "이 영화에 누가 나와?" 의 답. 사람 목록이다 */
+  cast: { id: string; name: string; as: string | null; role: "출연" | "감독" | "각본" }[];
   /** 질문에 이름이 나온 사람의 수상 */
   personAwards: { person: string; award: string; year: number | null; forTitle: string | null }[];
   evidence: EvidenceMovie[];
@@ -146,7 +148,7 @@ export function ask(g: MovieGraph, question: string): AskResult {
     return {
       ...base, refused: true, refusalReason: r.reason,
       premiseBroken: false, premiseReason: null, premiseInstead: null,
-      characters: [], commonPeople: [], commonMovies: [], personAwards: [],
+      cast: [], characters: [], commonPeople: [], commonMovies: [], personAwards: [],
       evidence: [], dropped: 0,
     };
   }
@@ -176,6 +178,30 @@ export function ask(g: MovieGraph, question: string): AskResult {
     }
   }
 
+  /**
+   * 출연진 목록.
+   *
+   * 답이 **사람**이므로 영화 목록으로는 답이 되지 않는다. 실측 사고 —
+   * "괴물에 나온 배우들 알려줘" 가 봉준호의 다른 영화 9편을 내놓았다.
+   * 질문이 지목한 작품의 크레딧을 그대로 돌려준다.
+   */
+  const cast: AskResult["cast"] = [];
+  if (r.route === "cast") {
+    const target = titlesIn(question, g)[0] ?? g.movie(seeds[0] ?? "");
+    if (target) {
+      const rank = (e: { kind: string; order?: number }) =>
+        e.kind === "DIRECTED" ? -2 : e.kind === "WROTE" ? -1 : (e.order ?? 99);
+      for (const e of g.creditsOf(target.id).sort((a, b) => rank(a) - rank(b)).slice(0, 25)) {
+        const p = g.person(e.from);
+        if (!p) continue;
+        cast.push({
+          id: p.id, name: p.name, as: e.as ?? null,
+          role: e.kind === "DIRECTED" ? "감독" : e.kind === "WROTE" ? "각본" : "출연",
+        });
+      }
+    }
+  }
+
   const cp = commonPeople(question, g);
   const ps = peopleIn(question, g);
   const shared = ps.length >= 2
@@ -200,6 +226,7 @@ export function ask(g: MovieGraph, question: string): AskResult {
     premiseBroken: premise.broken,
     premiseReason: premise.broken ? premise.reason : null,
     premiseInstead: premise.instead ?? null,
+    cast,
     characters: [...new Map(characters.map((c) => [`${c.person}|${c.movie}`, c])).values()].slice(0, 6),
     commonPeople: cp.people.map((p) => ({ name: p.name, acted: p.acted !== false })),
     commonMovies: shared,

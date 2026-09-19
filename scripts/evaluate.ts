@@ -16,6 +16,7 @@ import { join } from "node:path";
 import { MovieGraph, collectEvidence, DEFAULT_BUDGET } from "../lib/graph.ts";
 import { BM25 } from "../lib/bm25.ts";
 import { route, findSeeds, canAnswer, commonPeople, checkPremise } from "../lib/route.ts";
+import { ask } from "../lib/ask.ts";
 import { nameMatches } from "../lib/romanize.ts";
 
 const DATA = join(import.meta.dirname, "..", "data");
@@ -72,6 +73,10 @@ for (const q of gold.items) {
         }
       }
     }
+    if (!personHit && q.kind === "cast") {
+      const r2 = ask(g, q.question);
+      if (r2.cast.some((c) => c.name === q.needPerson)) personHit = true;
+    }
     if (!personHit) {
       // 작품 교집합 문항 — 공통 참여자에 정답이 있는가
       const cp = commonPeople(q.question, g);
@@ -115,7 +120,7 @@ for (const r of scored) {
 }
 
 L("\n  [ 유형별 — 기준 작품을 근거로 데려왔는가 ]");
-for (const kind of ["character", "filmography", "bridge", "intersect-movie", "intersect-person", "award", "release", "content"]) {
+for (const kind of ["character", "cast", "filmography", "bridge", "intersect-movie", "intersect-person", "award", "release", "content"]) {
   const s = scored.filter((r) => r.kind === kind);
   if (!s.length) continue;
   const gh = s.filter((r) => r.graphHit).length, bh = s.filter((r) => r.bm25Hit).length;

@@ -100,6 +100,7 @@ export type Route =
   | "bridge"        // ★ 작품 → 인물 → 다른 작품 (2홉 이상)
   | "similar"       // 장르·시리즈 기반 추천
   | "award"         // 수상 — 근거가 줄거리가 아니라 수상 기록이다
+  | "cast"          // 이 작품에 누가 나오나 — 답이 **사람 목록**이다
   | "out_of_scope"; // 예매·스트리밍·평점 예측 등 — 답하지 않는다
 
 export interface GraphData {

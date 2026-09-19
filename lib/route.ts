@@ -52,6 +52,20 @@ const AWARD_HINTS = [
   "여우주연", "남우주연", "감독상", "작품상", "각본상", "황금곰", "은곰",
 ];
 
+/**
+ * 이 작품에 **누가 나오는지** 묻는다.
+ *
+ * 배역 질문("기택 역을 맡은 배우")과 다르다. 저쪽은 한 사람을 찾는 것이고,
+ * 이쪽은 **목록**을 달라는 것이다. 실측으로 잡은 사고 —
+ * "괴물에 나온 배우들 알려줘" 가 lookup 으로 빠져서 봉준호의 다른 영화 9편을 내놓았다.
+ * 답이 크레딧 안에 있는데 밖으로 건너가 버린 것이다.
+ */
+const CAST_HINTS = [
+  "누가 나와", "누가 나오", "누가 출연", "나온 배우들", "나오는 배우들",
+  "출연진", "출연자", "캐스팅", "배우들 알려", "배우들은", "배우 목록",
+  "출연한 배우들", "누가 주연", "주연이 누구", "감독이 누구", "누가 만들",
+];
+
 /** 배역을 통해 배우를 묻는다 — "기택 역을 맡은 배우" */
 const CHARACTER_HINTS = ["역을 맡", "역을 연기", "역의 배우", "역할을 맡", "로 나온", "역 배우", "을 연기한", "를 연기한"];
 
@@ -80,6 +94,10 @@ export function route(question: string): RouteResult {
 
   const fi = hit(FILMOGRAPHY_HINTS);
   if (fi) return { route: "filmography", reason: `작품 목록을 물음: ${fi}` };
+
+  // 배역 질문보다 먼저 본다 — "나온 배우들" 은 목록이지 한 사람이 아니다
+  const ca = hit(CAST_HINTS);
+  if (ca) return { route: "cast", reason: `출연진을 물음: ${ca}` };
 
   const ch = hit(CHARACTER_HINTS);
   if (ch) return { route: "lookup", reason: `배역으로 배우를 물음: ${ch}` };
