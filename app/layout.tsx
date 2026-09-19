@@ -18,7 +18,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Link href="/">질문</Link>
           <Link href="/browse">작품 탐색기</Link>
           <Link href="/map">지도</Link>
-          <Link href="/viz">3D 전체화면</Link>
           {/* TMDB 이용 약관이 요구하는 고지 */}
           <span className="src">데이터 · TMDB (인증·보증 관계 없음)</span>
         </nav>

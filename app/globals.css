@@ -224,17 +224,6 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 .viz-stop .sub { opacity: 0.85; font-size: 11.5px; }
 .viz-hint { margin: 16px 0 0; font-size: 11.5px; color: var(--muted); }
 
-/* 질문 결과 → 3D */
-.to3d {
-  display: grid; grid-template-columns: 1fr auto; grid-template-areas: "main go" "sub go";
-  gap: 2px 14px; align-items: center; margin-top: 14px; padding: 15px 18px;
-  border-radius: var(--radius); text-decoration: none; color: var(--ink);
-  background: linear-gradient(100deg, var(--accent-soft), var(--panel)); border: 1px solid var(--accent);
-}
-.to3d:hover { background: var(--accent-soft); }
-.to3d-main { grid-area: main; font-size: 15px; font-weight: 700; color: var(--accent); }
-.to3d-sub { grid-area: sub; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
-.to3d-go { grid-area: go; font-size: 20px; color: var(--accent); }
 
 /* 3D 범례 — 화면 고정. 3D 공간 안에 두면 회전 시 안 보인다. */
 .viz-legend {

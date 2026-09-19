@@ -2,7 +2,7 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import type { SceneApi, VizEdge, VizNode } from "./viz/scene.ts";
+import type { SceneApi, VizEdge, VizNode } from "@/lib/scene.ts";
 
 /**
  * 오른쪽에 붙박이로 사는 3D 패널.
@@ -31,16 +31,13 @@ export default function VizDock() {
   /** 전경형 배경은 한 번만 받아 둔다 — 토글할 때마다 다시 받지 않도록 */
   const fieldRef = useRef<{ nodes: { id: string; title: string; korean: boolean }[] } | null>(null);
 
-  // /viz 는 전체 화면 3D 다 — 거기서는 패널을 띄우지 않는다 (캔버스 두 개가 되지 않게)
-  const hidden = pathname?.startsWith("/viz");
-
   // ── 씬 ─────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (hidden || !open) return;
+    if (!open) return;
     let dead = false;
     let api: SceneApi | null = null;
     (async () => {
-      const { createScene } = await import("./viz/scene.ts");
+      const { createScene } = await import("@/lib/scene.ts");
       if (mode === "field" && !fieldRef.current) {
         const d = await fetch("/api/graph").then((r) => r.json());
         fieldRef.current = { nodes: d.nodes };
@@ -59,7 +56,7 @@ export default function VizDock() {
       apiRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hidden, open, mode]);
+  }, [open, mode]);
 
   useEffect(() => {
     apiRef.current?.show(subject ? { ...subject, refused: false } : null);
@@ -67,7 +64,6 @@ export default function VizDock() {
 
   // ── ① 주소에서 주제 읽기 ───────────────────────────────────────────
   useEffect(() => {
-    if (hidden) return;
     const id = params.get("id");
     const person = params.get("person");
     const kind = person ? "person" : id ? "movie" : null;
@@ -84,7 +80,7 @@ export default function VizDock() {
       .then((d) => { if (!dead && !d.error) setSubject({ title: d.subject, nodes: d.nodes, edges: d.edges }); })
       .finally(() => { if (!dead) setBusy(false); });
     return () => { dead = true; };
-  }, [pathname, params, hidden]);
+  }, [pathname, params]);
 
   // ── ② 질문 화면이 보내는 이벤트 ────────────────────────────────────
   useEffect(() => {
@@ -92,8 +88,6 @@ export default function VizDock() {
     window.addEventListener(VIZ_EVENT, on);
     return () => window.removeEventListener(VIZ_EVENT, on);
   }, []);
-
-  if (hidden) return null;
 
   return (
     <aside className={open ? "dock" : "dock closed"}>

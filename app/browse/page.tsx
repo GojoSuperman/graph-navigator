@@ -38,8 +38,7 @@ export default async function Browse({
 
         {/* 오른쪽 패널이 이미 이 인물을 그리고 있다. 여기는 전체화면으로 가는 보조 링크만. */}
         <p className="to3d-mini">
-          오른쪽에 <b>{p.name}</b> 이 잇는 작품이 그려집니다 ·{" "}
-          <Link href={`/viz?person=${encodeURIComponent(p.id)}`}>전체 화면으로</Link>
+          오른쪽에 <b>{p.name}</b> 이 잇는 작품이 그려집니다
         </p>
         {p.awards?.length ? (
           <section className="card">
@@ -109,8 +108,7 @@ export default async function Browse({
       </header>
 
       <p className="to3d-mini">
-        오른쪽에 <b>《{m.title}》</b>에서 뻗는 관계가 그려집니다 ·{" "}
-        <Link href={`/viz?movie=${encodeURIComponent(m.id)}`}>전체 화면으로</Link>
+        오른쪽에 <b>《{m.title}》</b>에서 뻗는 관계가 그려집니다
       </p>
 
       {m.awards?.length ? (
