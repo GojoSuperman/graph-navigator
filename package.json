@@ -2,6 +2,8 @@
   "name": "movie-navigator",
   "private": true,
   "type": "module",
+  "homepage": "https://movie-navigator.vercel.app",
+  "repository": { "type": "git", "url": "https://github.com/GojoSuperman/movie-navigator.git" },
   "engines": {
     "node": ">=24"
   },
