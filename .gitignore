@@ -1,0 +1,21 @@
+# 시크릿
+.env
+.env.local
+.env.*.local
+.mcp.json
+.claude/settings.local.json
+.claude/.credentials.json
+*.pem
+*.key
+
+# 검토용 뷰어 (로컬 전용)
+.superpowers/
+
+# 도구 런타임 상태 (로컬 전용)
+.bkit/
+
+# Node
+node_modules/
+.next/
+out/
+next-env.d.ts

@@ -1,0 +1,13 @@
+{
+  "name": "movie-navigator",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "test": "node --test \"test/*.test.ts\"",
+    "fetch": "node scripts/fetch-movies.ts",
+    "graph": "node scripts/build-graph.ts",
+    "eval": "node scripts/evaluate.ts"
+  },
+  "packageManager": "pnpm@11.5.0"
+}
