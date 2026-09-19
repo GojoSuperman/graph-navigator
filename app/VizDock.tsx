@@ -19,7 +19,7 @@ import type { SceneApi, VizEdge, VizNode } from "@/lib/scene.ts";
 type Subject = { title: string; nodes: VizNode[]; edges: VizEdge[] } | null;
 
 /** TMDB 포스터 주소 */
-const posterUrl = (p: string) => `https://image.tmdb.org/t/p/w342${p}`;
+const posterUrl = (p: string) => `https://image.tmdb.org/t/p/w500${p}`;
 
 export const VIZ_EVENT = "viz:subject";
 

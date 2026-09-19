@@ -164,7 +164,9 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 .viz-boot { position: absolute; inset: 0; display: grid; place-items: center; color: #7ee787; font-size: 13px; margin: 0; }
 
 /* --viz-zoom 은 scene.ts 가 카메라 거리에 따라 1~2 사이로 갱신한다 */
-.viz-labels { position: absolute; top: 0; left: 0; pointer-events: auto; --viz-zoom: 1; }
+/* z-index 를 명시한다. 비워 두면 CSS2DRenderer 가 붙인 라벨이
+   모달 위에 그려진다 — 실제로 포스터가 라벨에 덮였다. */
+.viz-labels { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: auto; --viz-zoom: 1; }
 .viz-label {
   pointer-events: none; transform: translate(-50%, -100%);
   font-size: calc(11px * var(--viz-zoom));
@@ -338,7 +340,7 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 
 /* 3D 조작 방법 — 무대 좌측 하단 */
 .dock-help {
-  position: absolute; left: 12px; bottom: 12px; z-index: 3;
+  position: absolute; left: 12px; bottom: 12px; z-index: 5;
   display: flex; gap: 14px; flex-wrap: wrap;
   padding: 7px 12px; border-radius: 8px;
   background: rgba(11, 13, 18, 0.9); border: 1px solid #3a4354;
@@ -408,14 +410,17 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 
 /* ── 3D 에서 고른 작품의 포스터 ─────────────────────────────────── */
 .poster-back {
-  position: absolute; inset: 0; z-index: 8; display: grid; place-items: center;
-  background: rgba(6, 8, 12, 0.78); padding: 24px;
+  position: absolute; inset: 0; z-index: 30; display: grid; place-items: center;
+  background: rgba(6, 8, 12, 0.86); padding: 20px;
+  backdrop-filter: blur(3px);
 }
 .poster {
-  position: relative; max-width: min(320px, 80%);
-  background: #12161e; border: 1px solid #3a4354; border-radius: 14px;
-  overflow: hidden; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+  position: relative; width: min(420px, 92%); max-height: 100%;
+  display: flex; flex-direction: column;
+  background: #12161e; border: 1px solid #47526a; border-radius: 14px;
+  overflow: hidden; box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7);
 }
+.poster img { min-height: 0; object-fit: contain; }
 .poster img { display: block; width: 100%; height: auto; }
 .poster-none {
   display: grid; place-items: center; aspect-ratio: 2 / 3;
@@ -429,7 +434,7 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 }
 .poster-x:hover { border-color: #64b5ff; }
 .poster-info { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 4px; }
-.poster-info b { font-size: 15px; color: #f2f5f9; }
-.poster-info span { font-size: 12.5px; color: #aab4c4; }
-.poster-info a { font-size: 13px; font-weight: 600; color: #64b5ff; text-decoration: none; margin-top: 4px; }
+.poster-info b { font-size: 17px; color: #f2f5f9; }
+.poster-info span { font-size: 13px; color: #aab4c4; }
+.poster-info a { font-size: 13.5px; font-weight: 700; color: #64b5ff; text-decoration: none; margin-top: 4px; }
 .poster-info a:hover { text-decoration: underline; }
