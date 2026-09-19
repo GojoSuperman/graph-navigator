@@ -178,6 +178,30 @@ done = 0;
 await loadCredits(added);
 console.log(`\r   ${done}편 완료`);
 
+// ── ⑤ 인물 별칭 ──────────────────────────────────────────────────────
+//
+// TMDB 는 인물을 **활동명**으로 저장한다. 아이유는 `IU` 로 들어 있어서
+// "아이유가 나온 영화" 가 하나도 안 잡혔다(배역명의 로마자 문제와 달리
+// 이건 변환 규칙으로 풀 수 없다 — 활동명 자체가 다른 말이다).
+//
+// 다행히 /person/{id} 의 also_known_as 에 "아이유 / 이지은 / Lee Ji-eun …" 이 있다.
+// 한글 별칭만 골라 붙인다.
+console.log("\n⑤ 인물 별칭 조회…");
+const aliasOf: Record<number, string[]> = {};
+const worth = [...people.values()]
+  .filter((p) => (filmsOfPerson.get(p.id)?.size ?? 0) >= 1)
+  .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0));
+let an = 0;
+for (const p of worth) {
+  try {
+    const d = await api(`/person/${p.id}`);
+    const ko = (d.also_known_as ?? []).filter((x: string) => /^[가-힣][가-힣\s]{1,9}$/.test(x));
+    if (ko.length) aliasOf[p.id] = [...new Set(ko)];
+  } catch { /* 한 명 실패가 전체를 막지 않는다 */ }
+  if (++an % 200 === 0) process.stdout.write(`\r   ${an}/${worth.length}명…`);
+}
+console.log(`\r   ${an}명 확인 · 한글 별칭이 있는 인물 ${Object.keys(aliasOf).length}명`);
+
 // ── 저장 ─────────────────────────────────────────────────────────────
 await mkdir(OUT, { recursive: true });
 const raw = {
@@ -186,7 +210,7 @@ const raw = {
   genres: Object.fromEntries(GENRE),
   movies: [...movies.values()],
   credits: Object.fromEntries([...credits.entries()].map(([k, v]) => [k, { cast: (v.cast ?? []).slice(0, 30), crew: (v.crew ?? []).filter((x: any) => ["Director", "Screenplay", "Writer"].includes(x.job)) }])),
-  people: [...people.values()],
+  people: [...people.values()].map((p: any) => ({ ...p, aliases: aliasOf[p.id] ?? [] })),
 };
 await writeFile(join(OUT, "raw.json"), JSON.stringify(raw), "utf-8");
 

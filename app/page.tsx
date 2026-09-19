@@ -90,7 +90,13 @@ export default function Home() {
       const r = await fetch("/api/ask", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ question: text }),
+        // 직전 결과를 함께 보낸다 — "그중에" 가 무엇을 가리키는지 서버가 알아야 한다
+        body: JSON.stringify({
+          question: text,
+          previous: res && res.evidence.length
+            ? { question: res.question, movieIds: res.evidence.map((e) => e.id) }
+            : undefined,
+        }),
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data?.error ?? "요청이 실패했습니다");
@@ -169,9 +175,17 @@ export default function Home() {
       {res && (
         <section>
           <div className="meta">
-            <span className="badge">{ROUTE_LABEL[res.route] ?? res.route}</span>
+            <span className="badge">{res.followUp ? "이어서" : ROUTE_LABEL[res.route] ?? res.route}</span>
             <span className="why">{res.reason}</span>
           </div>
+
+          {res.followUp && (
+            <p className="followup">
+              「{res.followUp.of}」의 결과에서 <b>{res.followUp.filters.join(" · ")}</b> 추렸습니다
+              — 새로 찾지 않았습니다
+            </p>
+          )}
+          {res.followUpGaveUp && <p className="followup gave">{res.followUpGaveUp}</p>}
 
           {res.refused ? (
             <div className="card stop">

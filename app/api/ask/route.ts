@@ -12,15 +12,21 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   let question = "";
+  let previous: { question: string; movieIds: string[] } | undefined;
   try {
-    question = String(((await req.json()) as { question?: unknown }).question ?? "").trim();
+    const body = (await req.json()) as { question?: unknown; previous?: unknown };
+    question = String(body.question ?? "").trim();
+    const pv = body.previous as { question?: string; movieIds?: string[] } | undefined;
+    if (pv?.question && Array.isArray(pv.movieIds) && pv.movieIds.length) {
+      previous = { question: String(pv.question), movieIds: pv.movieIds.map(String).slice(0, 30) };
+    }
   } catch {
     return Response.json({ error: "요청 형식이 올바르지 않습니다" }, { status: 400 });
   }
   if (!question) return Response.json({ error: "질문이 비어 있습니다" }, { status: 400 });
 
   const g = await loadGraph();
-  const result = ask(g, question);
+  const result = ask(g, question, previous);
 
   // 왜 답변 문장이 없는지 숨기지 않는다 — 비어 있는 것과 고장난 것을 구분할 수 있어야 한다.
   const a = await generateAnswer(result);

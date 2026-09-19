@@ -93,7 +93,13 @@ export async function generateAnswer(r: AskResult): Promise<AnswerResult> {
         max_tokens: 500,
         messages: [
           { role: "system", content: SYSTEM },
-          { role: "user", content: `질문: ${r.question}\n\n「근거」\n${evidence}` },
+          {
+            role: "user",
+            content: r.followUp
+              // 이어지는 질문은 **직전 질문이 무엇이었는지** 알아야 답이 자연스럽다
+              ? `앞선 질문: ${r.followUp.of}\n이어지는 질문: ${r.question}\n(직전 결과에서 ${r.followUp.filters.join(" · ")} 로 추렸다)\n\n「근거」\n${evidence}`
+              : `질문: ${r.question}\n\n「근거」\n${evidence}`,
+          },
         ],
       }),
     });

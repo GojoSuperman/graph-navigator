@@ -48,6 +48,12 @@ export interface Person {
   department: string;
   popularity: number;
   /**
+   * 다른 이름. TMDB 는 인물을 **활동명**으로 저장한다 — 아이유는 `IU` 다.
+   * 배역명의 로마자 문제와 달리 변환 규칙으로 풀 수 없어서,
+   * TMDB 의 also_known_as 에서 한글 별칭만 골라 받아 둔다.
+   */
+  aliases?: string[];
+  /**
    * 이 사람이 받은 상. **영화가 받은 상과 다르다** —
    * 《밀양》의 수상 기록에는 "칸 여우주연상" 이 없다. 그건 전도연이 받은 상이다.
    * 수상 자격에 작품이 달려 있어 forTmdb 로 우리 그래프와 이어진다.

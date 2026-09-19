@@ -61,6 +61,7 @@ const people: Person[] = raw.people.map((p: any) => ({
   department: p.department ?? "",
   popularity: p.popularity ?? 0,
   awards: personAwardsOf[p.name ?? ""] ?? undefined,
+  aliases: p.aliases?.length ? p.aliases : undefined,
 }));
 
 const collections: Collection[] = [];

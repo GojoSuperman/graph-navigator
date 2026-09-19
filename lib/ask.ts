@@ -12,6 +12,7 @@ import {
   commonPeople, peopleIn, titlesIn, seedsFromPeopleIntersection, mentions,
 } from "./route.ts";
 import { nameMatches } from "./romanize.ts";
+import { detectFollowUp } from "./followup.ts";
 import type { Movie, Route } from "./types.ts";
 
 export interface PathStep {
@@ -59,6 +60,10 @@ export interface AskResult {
   personAwards: { person: string; award: string; year: number | null; forTitle: string | null }[];
   evidence: EvidenceMovie[];
   dropped: number;
+  /** 직전 결과를 물려받아 거른 경우 — 무엇을 걸렀는지 */
+  followUp: { of: string; filters: string[] } | null;
+  /** 이어붙이려다 포기한 경우 그 이유 */
+  followUpGaveUp: string | null;
 }
 
 const toSteps = (g: MovieGraph, path: Hop[]): PathStep[] =>
@@ -128,7 +133,43 @@ const toEvidence = (g: MovieGraph, m: Movie, path: Hop[], isSeed: boolean): Evid
   isSeed,
 });
 
-export function ask(g: MovieGraph, question: string): AskResult {
+/** 직전 결과 — 이어지는 질문이 물려받는다 */
+export interface Previous { question: string; movieIds: string[] }
+
+export function ask(g: MovieGraph, question: string, previous?: Previous): AskResult {
+  // ── 이어지는 질문이면 새로 찾지 않고 직전 근거를 거른다 ────────────
+  const fu = detectFollowUp(question, Boolean(previous?.movieIds.length));
+  if (fu.isFollowUp && previous) {
+    let ms = previous.movieIds.map((id) => g.movie(id)!).filter(Boolean);
+    for (const f of fu.filters) ms = f.apply(ms);
+    return {
+      question,
+      route: "lookup",
+      reason: `직전 결과를 이어받음 — ${fu.filters.map((f) => f.label).join(" · ")}`,
+      refused: false,
+      refusalReason: null,
+      premiseBroken: ms.length === 0,
+      premiseReason: ms.length === 0
+        ? `직전 결과 ${previous.movieIds.length}편 중 **${fu.filters.map((f) => f.label).join(" · ")}** 에 해당하는 작품이 없습니다`
+        : null,
+      premiseInstead: null,
+      seeds: [],
+      cast: [],
+      characters: [],
+      commonPeople: [],
+      commonMovies: [],
+      personAwards: [],
+      evidence: ms.map((m) => toEvidence(g, m, [], false)),
+      dropped: 0,
+      followUp: { of: previous.question, filters: fu.filters.map((f) => f.label) },
+      followUpGaveUp: null,
+    };
+  }
+
+  return askFresh(g, question, fu.gaveUp);
+}
+
+function askFresh(g: MovieGraph, question: string, gaveUp: string | null): AskResult {
   const r = routeOf(question);
   const seeds = findSeeds(question, g);
   const premise = checkPremise(question, g);
@@ -149,7 +190,7 @@ export function ask(g: MovieGraph, question: string): AskResult {
       ...base, refused: true, refusalReason: r.reason,
       premiseBroken: false, premiseReason: null, premiseInstead: null,
       cast: [], characters: [], commonPeople: [], commonMovies: [], personAwards: [],
-      evidence: [], dropped: 0,
+      evidence: [], dropped: 0, followUp: null, followUpGaveUp: gaveUp,
     };
   }
 
@@ -235,6 +276,8 @@ export function ask(g: MovieGraph, question: string): AskResult {
       toEvidence(g, m, got.paths.get(m.id)?.length ? got.paths.get(m.id)! : (bridges.get(m.id) ?? []), seedSet.has(m.id)),
     ),
     dropped: got.dropped,
+    followUp: null,
+    followUpGaveUp: gaveUp,
   };
 }
 

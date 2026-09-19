@@ -180,8 +180,16 @@ export function seedsFromTitle(question: string, g: MovieGraph): string[] {
  */
 export function peopleIn(question: string, g: MovieGraph) {
   const q = norm(question);
+  /**
+   * 별칭도 본다. TMDB 는 인물을 **활동명**으로 저장한다 —
+   * "아이유가 나온 영화" 가 하나도 안 잡혔던 이유다(저장된 이름은 `IU`).
+   * 배역명의 로마자 문제와 달리 변환 규칙으로는 풀 수 없어서 별칭을 받아 둔다.
+   */
   const hits = [...g.people.values()]
-    .filter((p) => p.name.length >= 2 && mentions(question, p.name))
+    .filter((p) =>
+      (p.name.length >= 2 && mentions(question, p.name)) ||
+      (p.aliases ?? []).some((a) => a.length >= 2 && mentions(question, a)),
+    )
     .sort((a, b) => b.name.length - a.name.length || b.popularity - a.popularity);
   // '송강호' 가 잡혔으면 '송강' 은 같은 자리를 가리키는 잡음이다. 긴 쪽이 이긴다.
   const out: typeof hits = [];
@@ -606,6 +614,27 @@ export interface PremiseCheck {
 
 export function checkPremise(question: string, g: MovieGraph): PremiseCheck {
   const asksActor = /배우|출연|연기/.test(question);
+
+  /**
+   * ③ 인물·작품을 지목했는데 **그 대상이 말뭉치에 없다.**
+   *
+   * "아이유가 나온 영화 알려줘" — 아이유는 수집 범위 밖이다.
+   * 그런데 BM25 가 글자만 겹치는 《아이 캔 스피크》·《나쁜 영화》를 끌어왔고,
+   * 화면에는 아이유와 무관한 10편이 근거로 떴다. LLM 은 "확인되지 않습니다" 라고
+   * 바르게 답했지만, **그 전에 막았어야 한다** — 무관한 근거를 보여 주는 것 자체가
+   * 사용자를 속인다.
+   *
+   * 인물의 작품을 묻는 질문에서 **기준점이 하나도 없으면** 답할 수 없다.
+   */
+  const r = route(question);
+  if ((r.route === "filmography" || r.route === "cast") &&
+      !peopleIn(question, g).length && !titlesIn(question, g).length) {
+    return {
+      broken: true,
+      reason: "질문에 나온 **인물이나 작품을 수집 범위에서 찾지 못했습니다**",
+      instead: "이 도구는 한국 영화 1,018편과 그 인물이 참여한 외국 영화 703편만 다룹니다",
+    };
+  }
 
   // ① 작품 교집합 — "A·B·C에 모두 출연한 배우"
   const titles = titlesIn(question, g);
