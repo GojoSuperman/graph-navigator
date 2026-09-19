@@ -294,3 +294,16 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
   background: var(--accent-soft); border: 1px solid var(--line); color: var(--muted);
 }
 .to3d-mini b { color: var(--ink); }
+
+/* 3D 범례 — 무대 우측 상단에 고정. 회전해도 늘 보인다. */
+.dock-legend {
+  position: absolute; right: 10px; top: 10px; z-index: 3;
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 8px 11px; border-radius: 9px;
+  background: rgba(11, 13, 18, 0.82); border: 1px solid #2a303a;
+}
+.dock-legend span { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #c6cedb; white-space: nowrap; }
+.dock-legend .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.dock-legend .dot.ko { background: #64b5ff; box-shadow: 0 0 6px #64b5ff88; }
+.dock-legend .dot.fo { background: #ffb86b; box-shadow: 0 0 6px #ffb86b88; }
+.dock-legend .dot.br { background: #7ee787; box-shadow: 0 0 6px #7ee78788; }
