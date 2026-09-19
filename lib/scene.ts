@@ -140,6 +140,32 @@ export function createScene(
   }
 
   const sphere = new THREE.SphereGeometry(1, 20, 16);
+
+  /** 지금 화면에 맞춰야 할 범위 */
+  let fitted: ReturnType<typeof boundsOf> | null = null;
+
+  /**
+   * 카메라를 배치에 **꽉 차게** 맞춘다.
+   *
+   * 처음엔 거리에 임의의 배수(2.6)를 곱했다가 필요한 거리의 다섯 배쯤 물러나
+   * 그래프가 가운데 점처럼 작게 보였다. 제대로 계산한다 —
+   * 반경 r 이 시야에 들어오려면 거리는 r / tan(시야각/2) 다.
+   *
+   * 패널은 세로로 길쭉해서 **가로가 먼저 잘린다.** 세로·가로 중
+   * 더 먼 쪽을 택해야 어느 쪽도 화면 밖으로 나가지 않는다.
+   */
+  function fitCamera() {
+    if (!fitted) return;
+    const target = new THREE.Vector3(fitted.center.x, fitted.center.y, fitted.center.z);
+    const vfov = (camera.fov * Math.PI) / 180;
+    const distV = fitted.radius / Math.tan(vfov / 2);
+    const distH = fitted.radius / Math.tan(Math.atan(Math.tan(vfov / 2) * camera.aspect));
+    const dist = Math.max(distV, distH) * 1.15 + 8;   // 여백 15% + 라벨 자리
+    const dir = new THREE.Vector3(0.4, 0.36, 1).normalize();
+    camera.position.copy(target).addScaledVector(dir, dist);
+    controls.target.copy(target);
+    controls.update();
+  }
   /** 화면에 떠 있는 노드 — 클릭 판정에 쓴다 */
   const picks: { mesh: THREE.Mesh; node: VizNode }[] = [];
 
@@ -224,20 +250,8 @@ export function createScene(
       live.add(tag);
     }
 
-    /**
-     * 카메라를 배치에 맞춘다.
-     *
-     * 고정 타깃을 쓰면 노드가 적거나 많을 때마다 그래프가 구석으로 몰린다
-     * (실제로 좌측 상단에 치우쳐 보였다). 노드들의 **중심**을 보게 하고,
-     * 전체가 화면에 들어오도록 거리를 반경에서 계산한다.
-     */
-    const b = boundsOf([...local.values()]);
-    const target = new THREE.Vector3(b.center.x, b.center.y, b.center.z);
-    const dist = Math.max(70, (b.radius * 2.6) / Math.tan((camera.fov * Math.PI) / 360));
-    const dir = new THREE.Vector3(0.45, 0.42, 1).normalize();
-    camera.position.copy(target).addScaledVector(dir, dist);
-    controls.target.copy(target);
-    controls.update();
+    fitted = boundsOf([...local.values()]);
+    fitCamera();
 
     t0 = performance.now() / 1000;
   }
@@ -320,6 +334,7 @@ export function createScene(
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
     labelRenderer.setSize(w, h);
+    fitCamera();   // 폭이 바뀌면 잘리는 쪽도 바뀐다
   }
   resize();
 
