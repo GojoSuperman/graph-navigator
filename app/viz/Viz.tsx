@@ -135,6 +135,17 @@ export default function Viz() {
           ))}
         </div>
         {res && <p className="viz-question">{res.question}</p>}
+
+        {/*
+          범례는 화면에 **고정**한다. 3D 공간 안에 둔 층 이름은 회전하면 등을 보이거나
+          시야 밖으로 나간다 — 늘 보여야 하는 정보는 무대 위가 아니라 화면 위에 둔다.
+        */}
+        <div className="viz-legend" aria-label="색 범례">
+          <span><i className="dot ko" /> 한국 작품{mode === "field" && <em> · 위쪽 원판</em>}</span>
+          <span><i className="dot fo" /> 해외 작품{mode === "field" && <em> · 아래쪽 원판</em>}</span>
+          <span><i className="dot br" /> 다리 — 선 위의 이름이 건너게 해 준 사람</span>
+        </div>
+
         {!ready && <p className="viz-boot">3D 준비 중…</p>}
       </div>
 
