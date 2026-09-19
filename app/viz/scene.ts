@@ -60,6 +60,17 @@ export function createScene(
   controls.dampingFactor = 0.08;
   controls.target.set(0, -HOP_GAP * 0.8, 0);
 
+  /**
+   * 확대하면 라벨도 같이 커진다 (최대 2배).
+   *
+   * CSS2DRenderer 는 라벨의 transform 을 직접 쓰므로 scale() 을 덧씌울 수 없다.
+   * 대신 컨테이너에 CSS 변수를 꽂고 글자 크기·여백이 그 값을 따르게 한다.
+   * 기준은 처음 카메라 거리 — 가까워진 비율만큼 키우되 1~2배로 묶는다
+   * (축소할 때까지 작아지면 멀리서 아무것도 안 읽힌다).
+   */
+  const baseDistance = camera.position.distanceTo(controls.target);
+  let lastZoom = -1;
+
   scene.add(new THREE.AmbientLight(0xffffff, 1.6));
   const key = new THREE.DirectionalLight(0xffffff, 1.0);
   key.position.set(60, 120, 80);
@@ -234,6 +245,13 @@ export function createScene(
       el.style.opacity = String(k);
     }
     controls.update();
+
+    const z = Math.min(2, Math.max(1, baseDistance / Math.max(camera.position.distanceTo(controls.target), 1)));
+    if (Math.abs(z - lastZoom) > 0.01) {
+      labelRenderer.domElement.style.setProperty("--viz-zoom", z.toFixed(2));
+      lastZoom = z;
+    }
+
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
   }

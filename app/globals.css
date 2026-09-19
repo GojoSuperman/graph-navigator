@@ -157,10 +157,14 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 .viz-stage canvas { display: block; }
 .viz-boot { position: absolute; inset: 0; display: grid; place-items: center; color: #7ee787; font-size: 13px; margin: 0; }
 
-.viz-labels { position: absolute; top: 0; left: 0; pointer-events: auto; }
+/* --viz-zoom 은 scene.ts 가 카메라 거리에 따라 1~2 사이로 갱신한다 */
+.viz-labels { position: absolute; top: 0; left: 0; pointer-events: auto; --viz-zoom: 1; }
 .viz-label {
   pointer-events: none; transform: translate(-50%, -100%);
-  font-size: 11px; white-space: nowrap; padding: 3px 8px; border-radius: 6px;
+  font-size: calc(11px * var(--viz-zoom));
+  white-space: nowrap;
+  padding: calc(3px * var(--viz-zoom)) calc(8px * var(--viz-zoom));
+  border-radius: 6px;
   background: rgba(11, 13, 18, 0.85); border: 1px solid #2a303a; color: #d8dee8;
   transition: opacity 0.2s linear;
 }
@@ -168,12 +172,14 @@ ul.links span { color: var(--muted); font-size: 12.5px; text-align: right; }
 /* 다리 이름 — 선 한가운데. 이 화면의 주인공이다. */
 .viz-via {
   pointer-events: none; transform: translate(-50%, -50%);
-  font-size: 10.5px; font-weight: 700; white-space: nowrap;
-  padding: 2px 7px; border-radius: 999px;
+  font-size: calc(10.5px * var(--viz-zoom));
+  font-weight: 700; white-space: nowrap;
+  padding: calc(2px * var(--viz-zoom)) calc(7px * var(--viz-zoom));
+  border-radius: 999px;
   background: rgba(11, 13, 18, 0.9); border: 1px solid #7ee787; color: #7ee787;
   transition: opacity 0.2s linear;
 }
-.viz-tier { pointer-events: none; font-size: 11px; font-weight: 700; color: #8b95a5; opacity: 0.8; }
+.viz-tier { pointer-events: none; font-size: calc(11px * var(--viz-zoom)); font-weight: 700; color: #8b95a5; opacity: 0.8; }
 
 .viz-side { background: var(--panel); border-left: 1px solid var(--line); padding: 16px; overflow-y: auto; }
 @media (max-width: 900px) { .viz-side { border-left: 0; border-top: 1px solid var(--line); } }

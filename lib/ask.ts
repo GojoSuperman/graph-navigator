@@ -68,6 +68,51 @@ const toSteps = (g: MovieGraph, path: Hop[]): PathStep[] =>
     toLabel: g.movie(h.to)?.title ?? h.to,
   }));
 
+/**
+ * 씨앗끼리의 다리를 찾는다.
+ *
+ * ── 왜 필요한가 ────────────────────────────────────────────────────
+ * "마동석이 이터널스 이전에 찍은 좀비 영화는?" 에서 씨앗이 7개 나왔다 —
+ * 이터널스와 **마동석의 출연작 전부**가 한꺼번에 들어온 것이다.
+ * 씨앗은 탐색으로 도달한 것이 아니므로 경로가 비어 있고, 그래서 화면에
+ * **정작 답인 《부산행》으로 가는 다리가 그려지지 않았다.**
+ * 엉뚱한 배우(젬마 찬·안젤리나 졸리)로 건너간 선만 보였다.
+ *
+ * 그런데 이터널스와 부산행은 **그래프에서 분명히 이어져 있다** — 마동석으로.
+ * 씨앗 찾기가 지름길을 타면서 탐색 단계를 건너뛰었을 뿐이다.
+ * 도달 방법이 무엇이었든 **관계가 있으면 그 관계를 보여 주는 것이 옳다.**
+ *
+ * 질문에 이름이 나온 인물을 우선한다. 그 사람이 질문의 주인공이기 때문이다.
+ */
+function seedBridges(g: MovieGraph, seeds: string[], question: string): Map<string, Hop[]> {
+  const out = new Map<string, Hop[]>();
+  if (seeds.length < 2) return out;
+
+  // 기준점 — 질문이 제목으로 지목한 작품, 없으면 첫 씨앗
+  const named = new Set(titlesIn(question, g).map((m) => m.id));
+  const anchor = seeds.find((id) => named.has(id)) ?? seeds[0];
+
+  const asked = new Set(peopleIn(question, g).map((p) => p.id));
+  const creditsOf = (id: string) =>
+    new Map(g.creditsOf(id).map((e) => [e.from, e] as const));
+  const anchorCredits = creditsOf(anchor);
+
+  for (const id of seeds) {
+    if (id === anchor) continue;
+    const here = creditsOf(id);
+    const shared = [...here.keys()].filter((pid) => anchorCredits.has(pid));
+    if (!shared.length) continue;
+    // 질문에 나온 사람 > 주연에 가까운 사람
+    const pick =
+      shared.find((pid) => asked.has(pid)) ??
+      shared.sort((a, b) => (here.get(a)!.order ?? 99) - (here.get(b)!.order ?? 99))[0];
+    const p = g.person(pick);
+    if (!p) continue;
+    out.set(id, [{ from: anchor, to: id, kind: here.get(pick)!.kind, via: p.name }]);
+  }
+  return out;
+}
+
 const toEvidence = (g: MovieGraph, m: Movie, path: Hop[], isSeed: boolean): EvidenceMovie => ({
   id: m.id,
   title: m.title,
@@ -107,6 +152,8 @@ export function ask(g: MovieGraph, question: string): AskResult {
   }
 
   const got = collectEvidence(g, seeds, DEFAULT_BUDGET, r.route);
+  // 씨앗끼리도 관계가 있으면 그려 준다 (탐색으로 도달하지 않았을 뿐이다)
+  const bridges = seedBridges(g, seeds, question);
   const gate = canAnswer(r, seeds, got.movies.length);
   const seedSet = new Set(seeds);
 
@@ -157,7 +204,9 @@ export function ask(g: MovieGraph, question: string): AskResult {
     commonPeople: cp.people.map((p) => ({ name: p.name, acted: p.acted !== false })),
     commonMovies: shared,
     personAwards: personAwards.slice(0, 8),
-    evidence: got.movies.map((m) => toEvidence(g, m, got.paths.get(m.id) ?? [], seedSet.has(m.id))),
+    evidence: got.movies.map((m) =>
+      toEvidence(g, m, got.paths.get(m.id)?.length ? got.paths.get(m.id)! : (bridges.get(m.id) ?? []), seedSet.has(m.id)),
+    ),
     dropped: got.dropped,
   };
 }
