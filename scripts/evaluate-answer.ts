@@ -78,6 +78,15 @@ const gold = JSON.parse(await readFile(join(DATA, "golden.json"), "utf-8"));
 type Item = {
   id: string; kind: string; split: string; question: string; answer: string;
   needPerson?: string; needMovies?: string[]; claimTrue?: boolean; note?: string;
+  /**
+   * 같은 답의 **다른 표기**. 정답을 늘리는 칸이 아니다.
+   *
+   * 실측 — "《올드보이》가 2004년 칸에서 받은 상은?" 에 시스템이 **그랑프리**
+   * 라 답했고 오답으로 집계됐다. 정답에는 **심사위원대상** 이라 적혀 있다.
+   * 둘은 칸 Grand Prix 의 한국어 표기 두 가지로, **같은 상이다.**
+   * 표기가 달라서 틀렸다고 세면 재는 것이 정확도가 아니라 어휘 일치가 된다.
+   */
+  accept?: string[];
 };
 
 /**
@@ -110,6 +119,10 @@ const says = (text: string, needle: string) =>
  * 개봉 연도 질문에서 《기생충》만 말하고 연도를 안 말해도 맞았다고 세게 된다.
  */
 function expectedOf(it: Item): string[] {
+  return [...new Set([...expectedCore(it), ...(it.accept ?? [])].filter(Boolean))];
+}
+
+function expectedCore(it: Item): string[] {
   const raw = (it.answer ?? "").trim();
   const clean = raw.replace(/[《》'']/g, "").trim();
   const usable = clean && !clean.startsWith("(") ? clean : "";
