@@ -329,6 +329,39 @@ if (g3.length) {
   for (const r of g3) L(`    [${r.it.id}] ${r.it.question.slice(0, 44)}  → ${r.why}`);
 }
 
+/**
+ * 근거에 답이 없어서 못 말한 것 — **이 층의 손실이 아니다.** 그래도 찍는다.
+ *
+ * 이 칸은 오랫동안 숫자만 있고 목록이 없었다. 그래서 무엇이 들어 있는지
+ * 보려면 매번 `--show` 로 132문항 전문을 훑어야 했고, 실제로 그렇게 훑다가
+ * **평가셋의 정답 오류**를 발견했다 (h010 — 《남산의 부장들》에는 최민식도
+ * 황정민도 없다). 손실이 아닌 칸이라고 안 보이게 두면, 그 안에 섞인
+ * 다른 종류의 고장도 같이 안 보인다. **재지 않은 것은 고장 나 있어도 드러나지 않는다.**
+ *
+ * 한 줄에 **어디서 잃었는지**까지 적는다. 기대 작품이 말뭉치에 아예 없는 것과,
+ * 말뭉치에 있는데 근거로 못 데려온 것은 **고칠 자리가 다르다** —
+ * 앞은 수집(fetch), 뒤는 탐색(route/graph)이다.
+ */
+if (g4.length) {
+  L("\n  [ 근거에 답이 없어 못 말한 것 — 이 층의 손실이 아니다 (고칠 자리는 수집·탐색) ]");
+  const titles = new Set([...g.movies.values()].map((m) => m.title));
+  for (const r of g4) {
+    /**
+     * `needMovies` 가 아니라 `expected` 로 본다. 그 칸은 비어 있을 수 있고
+     * (h080 이 그랬다 — 답이 작품인데 needMovies 가 비어 있었다), 비어 있으면
+     * **진단이 조용히 틀린다.** 재는 대상은 유형표가 아니라 그 문항의 답이다.
+     */
+    const inCorpus = r.expected.filter((e) => titles.has(e));
+    const where = inCorpus.length
+      ? `말뭉치에 **있다** (《${inCorpus[0]}》) — 데려오지 못한 것이다 → 탐색`
+      : "기대한 글자가 말뭉치의 어느 제목과도 안 맞는다 — 수집이 없거나, 답이 작품이 아니다";
+    L(`\n    [${r.it.id}] ${r.it.question.slice(0, 54)}`);
+    L(`      기대  ${r.expected.join(" / ")}`);
+    L(`      진단  ${where}`);
+    L(`      답변  ${(r.text ?? `— ${r.reason}`).replace(/\s+/g, " ").slice(0, 100)}`);
+  }
+}
+
 // ── 답하지 않는 것이 정답인 문항 ─────────────────────────────────────
 const mustNot = rows.filter((r) => MUST_NOT_ANSWER.has(r.it.kind));
 if (mustNot.length) {
