@@ -112,12 +112,26 @@ for (const m of movies) {
     (genreIndex[g] ??= []).push(m.id);
   }
 }
+/**
+ * 한국 작품과 외국 작품을 **따로 담는다.**
+ *
+ * 실측 — "역대 **한국 영화** 흥행 상위권 작품 중, 저승 세계를 소재로 한 판타지
+ * 영화는?" 의 씨앗이 미니언즈·퍼피 구조대·슈퍼 마리오 갤럭시였다.
+ * 판타지 색인 30칸이 **전부 외국 애니메이션**이었기 때문이다 —
+ * 말뭉치에 한국 판타지가 105편 있는데 **색인에는 0편**이었다.
+ *
+ * 인기 하나로 자르면 이렇게 된다. 외국 애니메이션은 TMDB 인기 지표에서
+ * 한국 영화를 압도하는데, 이 도구는 **한국 영화 내비게이터**이고 외국 작품은
+ * 인물을 따라 1홉으로 들어온 **다리**다. 한 줄로 세워 자르면 다리가 본체를 덮는다.
+ */
+const byId = new Map(movies.map((m) => [m.id, m]));
 for (const g of Object.keys(genreIndex)) {
-  genreIndex[g] = genreIndex[g]
-    .map((id) => movies.find((m) => m.id === id)!)
-    .sort((a, b) => b.popularity - a.popularity)
-    .slice(0, 30)
-    .map((m) => m.id);
+  const byPop = genreIndex[g]
+    .map((id) => byId.get(id)!)
+    .sort((a, b) => b.popularity - a.popularity);
+  const ko = byPop.filter((m) => m.originalLanguage === "ko").slice(0, 30);
+  const foreign = byPop.filter((m) => m.originalLanguage !== "ko").slice(0, 15);
+  genreIndex[g] = [...ko, ...foreign].map((m) => m.id);
 }
 
 const graph: GraphData = { movies, people, collections, edges, genreIndex };

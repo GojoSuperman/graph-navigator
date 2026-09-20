@@ -707,7 +707,25 @@ export function seedsFromCharacterActor(question: string, g: MovieGraph, top = 8
 export function seedsFromGenre(question: string, g: MovieGraph, top = 3): string[] {
   const q = norm(question);
   const genre = Object.keys(g.genreIndex).find((name) => q.includes(norm(name)));
-  return genre ? (g.genreIndex[genre] ?? []).slice(0, top) : [];
+  if (!genre) return [];
+  const ids = g.genreIndex[genre] ?? [];
+
+  /**
+   * 질문이 **한국 영화라고 못 박았으면 그 조건을 지킨다.**
+   *
+   * 실측 — "역대 **한국 영화** 흥행 상위권 작품 중, 저승 세계를 소재로 한
+   * 판타지 영화는?" 에 미니언즈·퍼피 구조대·슈퍼 마리오 갤럭시가 씨앗으로 왔다.
+   * 장르 색인을 인기순 그대로 앞에서 자르는데, 판타지 251편의 인기 상위가
+   * 전부 외국 애니메이션이기 때문이다. **질문에 적힌 조건을 코드가 버린 것이다.**
+   *
+   * 한국 작품만 두면 전지적 독자 시점 · 외계+인 1부 · **신과함께-죄와 벌** 이 온다.
+   * 외국 작품은 인물을 따라 1홉으로 들어온 **다리**이지 이 질문의 후보가 아니다.
+   */
+  if (/한국|국내/.test(question)) {
+    const ko = ids.filter((id) => g.movie(id)?.originalLanguage === "ko");
+    if (ko.length) return ko.slice(0, top);
+  }
+  return ids.slice(0, top);
 }
 
 /**
