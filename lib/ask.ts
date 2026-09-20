@@ -36,6 +36,15 @@ export interface EvidenceMovie {
   awards: { award: string; year: number | null }[];
   path: PathStep[];
   isSeed: boolean;
+  /**
+   * 이 작품의 감독과 주연 몇 명.
+   *
+   * 없을 때 실제로 난 일 — 근거에 《극한직업》이 들어와 있는데도
+   * "류승룡 이름 자체가 근거에 없습니다" 라고 답했다. 줄거리에는 배우가
+   * 안 적혀 있으므로, **크레딧을 같이 싣지 않으면 근거가 사람을 말하지 못한다.**
+   * 질문이 준 두 번째 조건(감독·배역)을 확인하는 데도 이것이 필요하다.
+   */
+  credits: { name: string; as: string | null; role: "출연" | "감독" | "각본" }[];
 }
 
 export interface AskResult {
@@ -127,8 +136,33 @@ function seedBridges(g: MovieGraph, seeds: string[], question: string): Map<stri
   return out;
 }
 
+/**
+ * 근거에 실을 크레딧 — 감독·각본을 먼저, 그다음 주연 순.
+ *
+ * 수를 제한하는 이유는 근거 예산과 같다. 한 작품에 30명이 붙어 있어서
+ * 전부 실으면 근거 10편이 조연 이름으로 뒤덮여 정작 작품이 밀린다.
+ */
+const CREDITS_PER_MOVIE = 5;
+const creditsFor = (g: MovieGraph, id: string): EvidenceMovie["credits"] => {
+  const rank = (e: { kind: string; order?: number }) =>
+    e.kind === "DIRECTED" ? -2 : e.kind === "WROTE" ? -1 : (e.order ?? 99);
+  return g.creditsOf(id)
+    .sort((a, b) => rank(a) - rank(b))
+    .slice(0, CREDITS_PER_MOVIE)
+    .flatMap((e) => {
+      const p = g.person(e.from);
+      if (!p) return [];
+      return [{
+        name: p.name,
+        as: e.as ?? null,
+        role: (e.kind === "DIRECTED" ? "감독" : e.kind === "WROTE" ? "각본" : "출연") as "출연" | "감독" | "각본",
+      }];
+    });
+};
+
 const toEvidence = (g: MovieGraph, m: Movie, path: Hop[], isSeed: boolean): EvidenceMovie => ({
   id: m.id,
+  credits: creditsFor(g, m.id),
   title: m.title,
   year: m.year,
   overview: m.overview,

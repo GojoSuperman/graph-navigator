@@ -337,6 +337,19 @@ if (show) {
   }
 }
 
+/**
+ * 근거 크기도 같이 보고한다.
+ * 근거에 무엇을 더 싣는 결정은 **정확도와 토큰의 교환**이라, 한쪽만 보면 판단할 수 없다.
+ * 크레딧 줄이 차지하는 몫을 따로 떼어 보여 준다.
+ */
+const sizes = rows.map((r) => r.block.length);
+const creditChars = rows.reduce(
+  (sum, r) => sum + r.block.split("\n").filter((l) => /^ {4}(감독|각본|출연) /.test(l)).reduce((a, l) => a + l.length + 1, 0),
+  0,
+);
+const avg = sizes.length ? Math.round(sizes.reduce((a, b) => a + b, 0) / sizes.length) : 0;
+L(`\n  [ 근거 크기 ] 평균 ${avg}자 · 최대 ${Math.max(0, ...sizes)}자 · 그중 크레딧 줄이 ${Math.round((creditChars / Math.max(1, sizes.reduce((a, b) => a + b, 0))) * 100)}%`);
+
 L(`\n  새로 호출 ${called}회 · 캐시 적중 ${rows.filter((r) => r.cached).length}회 · 캐시 ${CACHE_PATH.replace(/.*\//, "data/")}`);
 L("═".repeat(78));
 L();

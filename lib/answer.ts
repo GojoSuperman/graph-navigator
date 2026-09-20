@@ -36,7 +36,11 @@ export const SYSTEM = `너는 영화 정보를 **주어진 근거만으로** 답
    코드가 대조한 사실이다 — "근거 어디에도 없음" 인 낱말은 **없는 것이다.**
    그런 조건이 있으면 "…는 확인되지 않습니다" 라고 먼저 말하고, 부분적으로만
    맞는 작품은 "일부만 맞는다" 고 밝혀서 내놓는다.
-6. 한국어로 답한다.`;
+6. **「여러 작품에 모두 참여한 사람」 블록이 있으면 그것이 답이다.** 코드가 계산한
+   교집합이고, 조단역까지 전수로 본 결과다. 아래 작품별 출연 목록은 **주연 몇 명만**
+   실린 것이므로, 그것을 눈으로 대조해 교집합을 다시 고르지 마라 —
+   답이 조단역이면 작품별 목록에는 없다.
+7. 한국어로 답한다.`;
 
 
 /**
@@ -165,6 +169,22 @@ export function evidenceBlock(r: AskResult): string {
       // 연도에 **'개봉' 이라고 적는다.** 괄호 안 숫자만 두었더니 모델이 그것을 개봉
       // 연도로 읽지 못하고 "근거에 명시되어 있지 않습니다" 라고 거절했다 — 9문항이 그랬다.
       lines.push(`- 《${e.title}》${e.year ? ` (${e.year}년 개봉)` : ""} · ${e.genres.join("/")} · 평점 ${e.voteAverage.toFixed(1)}${aw}${path}`);
+      /**
+       * 크레딧을 줄거리보다 **먼저** 적는다. 줄거리에는 배우도 배역도 없으므로
+       * 사람을 묻는 질문은 이 줄에서만 답이 나온다.
+       * 배역명은 로마자 그대로 둔다 — 데이터가 그렇고, 바꾸면 없는 것을 지어내게 된다.
+       */
+      // 출연진을 묻는 질문은 위 [출연·제작진] 블록이 답이다. 여기에 또 실으면
+      // **동명이작의 크레딧이 섞인다** — "괴물에 나온 배우들" 에 고레에다의
+      // 2023년작 출연진을 답한 사고가 그것이다.
+      if (e.credits.length && !r.cast.length) {
+        const dir = e.credits.filter((c) => c.role !== "출연");
+        const act = e.credits.filter((c) => c.role === "출연");
+        const parts: string[] = [];
+        if (dir.length) parts.push(dir.map((c) => `${c.role} ${c.name}`).join(" · "));
+        if (act.length) parts.push(`출연 ${act.map((c) => `${c.name}${c.as ? `(${c.as} 역)` : ""}`).join(" · ")}`);
+        lines.push(`    ${parts.join(" · ")}`);
+      }
       if (e.overview) lines.push(`    줄거리: ${e.overview.replace(/\s+/g, " ").slice(0, 160)}`);
     }
   }
