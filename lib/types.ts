@@ -21,6 +21,12 @@ export interface Movie {
   /** 원제 — 한국어 제목이 없을 때 폴백이자, 검색 어휘를 넓혀 준다 */
   originalTitle: string;
   year: number | null;
+  /**
+   * 개봉일 `YYYY-MM-DD`. 연도만 두었더니 "《타짜》의 국내 개봉일은?" 에
+   * "근거에 명시되어 있지 않습니다" 라고 거절했다 — **TMDB 가 준 날짜를
+   * build-graph 가 연도로 깎아 버리고 있었다.** 수집에는 처음부터 있었다.
+   */
+  releaseDate: string | null;
   overview: string;
   genres: string[];
   /** 제작 국가 코드 (KR, US …) */

@@ -28,6 +28,8 @@ export interface EvidenceMovie {
   id: string;
   title: string;
   year: number | null;
+  /** 개봉일 `YYYY-MM-DD` — 연도만으로는 "개봉일은?" 에 답할 수 없다 */
+  releaseDate: string | null;
   overview: string;
   genres: string[];
   voteAverage: number;
@@ -165,6 +167,7 @@ const toEvidence = (g: MovieGraph, m: Movie, path: Hop[], isSeed: boolean): Evid
   credits: creditsFor(g, m.id),
   title: m.title,
   year: m.year,
+  releaseDate: m.releaseDate ?? null,
   overview: m.overview,
   genres: m.genres,
   voteAverage: m.voteAverage,

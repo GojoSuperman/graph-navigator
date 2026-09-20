@@ -24,7 +24,10 @@ const UA = { "User-Agent": "movie-navigator/0.1 (portfolio study project)" };
 
 const raw = JSON.parse(await readFile(join(DATA, "raw.json"), "utf-8"));
 const ids: string[] = raw.movies.map((m: any) => String(m.id));
-/** 인물 수상도 받는다 — "전도연이 칸 여우주연상을 받은 영화는?" 은 **인물**의 상이다 */
+/**
+ * 인물 수상도 받는다 — "전도연이 칸 여우주연상을 받은 영화는?" 은 **인물**의 상이다.
+ * 배우만이 아니다. 감독·각본가도 상을 받는다 (아래 질의의 직업 목록 참고).
+ */
 const names: string[] = [...new Set<string>(raw.people.map((p: any) => String(p.name)))].filter((n: string) => /[가-힣]/.test(n));
 
 async function sparql(q: string, ms = 60000): Promise<any[]> {
@@ -108,7 +111,11 @@ for (let i = 0; i < names.length; i += PCHUNK) {
   const q = `
 SELECT ?name ?awardLabel ?year ?tmdb ?forLabel WHERE {
   VALUES ?name { ${part.map((n) => `"${n.replace(/"/g, "")}"@ko`).join(" ")} }
-  ?p rdfs:label ?name ; wdt:P106 wd:Q33999 ; p:P166 ?st .
+  ?p rdfs:label ?name ; wdt:P106 ?occ ; p:P166 ?st .
+  # 직업 필터는 **동명이인**을 걸러내려고 둔다. 그런데 배우(Q33999)만 보고 있어서
+  # 감독·각본가가 통째로 빠졌다 — 이창동의 칸 각본상이 그래서 없었다.
+  # "이창동 감독이 《시》로 받은 상은?" 에 답하려면 감독·각본가도 봐야 한다.
+  VALUES ?occ { wd:Q33999 wd:Q2526255 wd:Q28389 wd:Q3282637 }
   ?st ps:P166 ?award .
   OPTIONAL { ?st pq:P1686 ?for . OPTIONAL { ?for wdt:P4947 ?tmdb } }
   OPTIONAL { ?st pq:P585 ?d . BIND(YEAR(?d) AS ?year) }

@@ -42,6 +42,8 @@ const movies: Movie[] = raw.movies.map((m: any) => ({
   title: m.title ?? m.original_title ?? "",
   originalTitle: m.original_title ?? "",
   year: m.release_date ? Number(String(m.release_date).slice(0, 4)) : null,
+  // 날짜를 통째로 들고 간다. 연도로 깎으면 개봉일 질문에 답할 수 없다.
+  releaseDate: m.release_date || null,
   overview: m.overview ?? "",
   genres: (m.genre_ids ?? []).map((g: number) => GENRE.get(g)).filter(Boolean) as string[],
   countries: m.origin_country ?? [],

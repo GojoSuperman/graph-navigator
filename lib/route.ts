@@ -193,6 +193,27 @@ export function mentions(question: string, name: string): boolean {
 }
 
 /**
+ * 한 글자 제목이 **제목 표시 안에** 들어 있는가 — 《시》, 〈시〉, '시', "시".
+ *
+ * 실측 — "이창동 감독이 《시》로 받은 상은?" 이 《시》를 한 편도 데려오지 못했다.
+ * 그래프에는 분명히 있었다 (이창동 ─DIRECTED─▶ 시). 아래 `length >= 2` 가
+ * **한 글자 제목 36편**(시·콜·잠·섬·업·카…)을 후보에서 통째로 빼고 있었다.
+ *
+ * 그렇다고 가드를 풀 수는 없다. 평가셋 152문항에서 글자 '시' 는 **18문항**,
+ * '수' 는 **19문항**에 그냥 들어 있다 — 대부분 제목이 아니라 남의 낱말 조각이다.
+ *
+ * 그래서 **괄호가 있을 때만** 연다. 사람이 한 글자 제목을 말할 때는 괄호를 친다.
+ * 안 치면 그 글자가 제목인지 낱말인지 **사람도 구분하지 못하기 때문**이다.
+ * 이 규칙으로 걸리는 문항은 152개 중 1개, 오탐은 0이다 (실측).
+ */
+const TITLE_MARKS = ["《》", "〈〉", "「」", "『』", "\u201c\u201d", "\u2018\u2019", "\"\"", "''"];
+export function bracketedTitle(question: string, title: string): boolean {
+  const t = title.trim();
+  if (!t) return false;
+  return TITLE_MARKS.some(([l, r]) => question.includes(`${l}${t}${r}`));
+}
+
+/**
  * 제목이 질문 안에 그대로 들어 있는가.
  * **긴 제목부터** 맞춘다 — 《범죄도시 2》를 《범죄도시》로 잘못 끊지 않도록.
  * (law-navigator 에서 '개인정보처리자'가 '개인정보'에 먹히던 것과 같은 문제)
@@ -200,7 +221,7 @@ export function mentions(question: string, name: string): boolean {
 export function seedsFromTitle(question: string, g: MovieGraph): string[] {
   const q = norm(question);
   return [...g.movies.values()]
-    .filter((m) => m.title.length >= 2 && mentions(question, m.title))
+    .filter((m) => (m.title.length >= 2 && mentions(question, m.title)) || bracketedTitle(question, m.title))
     .sort((a, b) => b.title.length - a.title.length || b.popularity - a.popularity)
     .slice(0, 3)
     .map((m) => m.id);
@@ -267,6 +288,8 @@ export function titlesIn(question: string, g: MovieGraph) {
   const hits = [...g.movies.values()]
     .map((m) => {
       if (m.title.length >= 2 && mentionsName(question, m.title)) return { m, hit: norm(m.title) };
+      // 한 글자 제목은 괄호가 있을 때만 — 위 bracketedTitle 주석 참고
+      if (m.title.length < 2 && bracketedTitle(question, m.title)) return { m, hit: norm(m.title) };
       const main = mainTitle(m.title);
       if (main && mentionsWhole(question, main)) return { m, hit: norm(main) };
       return null;

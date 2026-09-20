@@ -17,7 +17,7 @@ import { MovieGraph, collectEvidence, describePath, healthCheck, DEFAULT_BUDGET 
 import type { Edge, GraphData, Movie, Person } from "../lib/types.ts";
 
 const mv = (id: string, lang = "ko"): Movie => ({
-  id: `movie:${id}`, tmdbId: 0, title: id, originalTitle: id, year: 2020, overview: "",
+  id: `movie:${id}`, tmdbId: 0, title: id, originalTitle: id, year: 2020, releaseDate: "2020-01-01", overview: "",
   genres: [], countries: [], originalLanguage: lang, popularity: 0,
   voteAverage: 0, voteCount: 0, posterPath: null, collection: null,
 });

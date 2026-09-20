@@ -15,7 +15,7 @@ import { detectFollowUp, parseFilters } from "../lib/followup.ts";
 import type { Movie } from "../lib/types.ts";
 
 const mv = (p: Partial<Movie> & { id: string }): Movie => ({
-  tmdbId: 0, title: p.id, originalTitle: p.id, year: null, overview: "",
+  tmdbId: 0, title: p.id, originalTitle: p.id, year: null, releaseDate: null, overview: "",
   genres: [], countries: [], originalLanguage: "ko", popularity: 0,
   voteAverage: 0, voteCount: 0, posterPath: null, collection: null, ...p,
 });

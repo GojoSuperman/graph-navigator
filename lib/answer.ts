@@ -115,6 +115,30 @@ function termCheck(r: AskResult): string[] {
 }
 
 /**
+ * 근거에 실을 수상 기록을 고른다.
+ *
+ * 실측 사고 — "송강호가 출연한 영화 중 칸 황금종려상을 받은 작품은?" 에
+ * "확인되지 않습니다" 라고 답했다. 《기생충》 수상 기록에는 **황금종려상도
+ * 아카데미 작품상도 들어 있었다.** 그런데 근거에는 앞 3개만 실렸고,
+ * 그 3개가 하필 `아카데미 각본상 · 아카데미 감독상 · Gilde Film Price` 였다.
+ * **Gilde Film Price 는 싣고 황금종려상은 버린 것이다.**
+ *
+ * 자르는 것 자체는 필요하다 — 한 편에 최대 22개가 붙어 있다. 틀린 것은
+ * **정렬 없이 앞에서 자른 것**이다. 질문이 가리킨 상을 먼저 싣는다.
+ * 무엇을 묻는지는 코드가 글자로 확인할 수 있고, 거기서는 틀릴 일이 없다.
+ */
+const AWARDS_SHOWN = 6;
+function pickAwards(awards: { award: string; year: number | null }[], question: string) {
+  const q = question.replace(/\s+/g, "");
+  const asked = (name: string) => (name.match(/[가-힣]{2,}/g) ?? []).some((w) => q.includes(w));
+  return [...awards]
+    .map((a, i) => ({ a, i, hit: asked(a.award) }))
+    .sort((x, y) => (x.hit === y.hit ? x.i - y.i : x.hit ? -1 : 1))
+    .slice(0, AWARDS_SHOWN)
+    .map((x) => x.a);
+}
+
+/**
  * 모델에게 보여 줄 근거 — 화면에 뜨는 것과 같은 내용이어야 한다.
  *
  * 내보내는 이유: 답변 채점(scripts/evaluate-answer.ts)이 **모델이 실제로 본 것**에
@@ -165,10 +189,17 @@ export function evidenceBlock(r: AskResult): string {
     lines.push("[작품]");
     for (const e of r.evidence) {
       const path = e.path.length ? `  ← ${e.path.map((s) => `${s.fromLabel}에서 ${s.via}를 거쳐`).join(", ")}` : "";
-      const aw = e.awards.length ? ` · 수상: ${e.awards.slice(0, 3).map((a) => a.award).join(", ")}` : "";
+      const shown = pickAwards(e.awards, r.question);
+      const aw = shown.length
+        ? ` · 수상: ${shown.map((a) => a.award).join(", ")}${e.awards.length > shown.length ? ` 외 ${e.awards.length - shown.length}건` : ""}`
+        : "";
       // 연도에 **'개봉' 이라고 적는다.** 괄호 안 숫자만 두었더니 모델이 그것을 개봉
       // 연도로 읽지 못하고 "근거에 명시되어 있지 않습니다" 라고 거절했다 — 9문항이 그랬다.
-      lines.push(`- 《${e.title}》${e.year ? ` (${e.year}년 개봉)` : ""} · ${e.genres.join("/")} · 평점 ${e.voteAverage.toFixed(1)}${aw}${path}`);
+      // 날짜가 있으면 날짜까지 — "개봉일은?" 은 연도로 답이 되지 않는다
+      const when = e.releaseDate
+        ? ` (${e.releaseDate.replace(/^(\d{4})-(\d{2})-(\d{2})$/, (_m, y, mo, d) => `${y}년 ${Number(mo)}월 ${Number(d)}일`)} 개봉)`
+        : e.year ? ` (${e.year}년 개봉)` : "";
+      lines.push(`- 《${e.title}》${when} · ${e.genres.join("/")} · 평점 ${e.voteAverage.toFixed(1)}${aw}${path}`);
       /**
        * 크레딧을 줄거리보다 **먼저** 적는다. 줄거리에는 배우도 배역도 없으므로
        * 사람을 묻는 질문은 이 줄에서만 답이 나온다.
