@@ -244,7 +244,7 @@ export default function Home() {
                   <h2>수상</h2>
                   {res.personAwards.map((a, i) => (
                     <p key={i} style={{ margin: "3px 0", fontSize: 13.5 }}>
-                      🏆 {a.person} — {a.award}{a.year ? ` (${a.year})` : ""} {a.forTitle && <>· 《{a.forTitle}》</>}
+                      🏆 {a.person} — {a.award}{a.year ? ` (${a.year})` : ""} {a.forTitle ? <>· 《{a.forTitle}》</> : <em style={{ opacity: .6 }}>· 수상작 정보 없음</em>}
                     </p>
                   ))}
                 </div>

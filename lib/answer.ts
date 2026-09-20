@@ -225,7 +225,10 @@ export function evidenceBlock(r: AskResult): string {
   if (r.personAwards.length) {
     lines.push("[수상]");
     for (const a of r.personAwards) {
-      lines.push(`- ${a.person}: ${a.award}${a.year ? ` (${a.year})` : ""}${a.forTitle ? ` — 《${a.forTitle}》` : ""}`);
+      // 수상작이 없으면 **없다고 적는다.** 그냥 비워 두면 모델이 질문에 나온
+      // 작품으로 받은 것이라고 읽는다 — 우리 데이터는 그렇게 말한 적이 없다.
+      const work = a.forTitle ? ` — 《${a.forTitle}》` : " — (어느 작품으로 받았는지는 데이터에 없다)";
+      lines.push(`- ${a.person}: ${a.award}${a.year ? ` (${a.year})` : ""}${work}`);
     }
   }
   if (r.evidence.length) {

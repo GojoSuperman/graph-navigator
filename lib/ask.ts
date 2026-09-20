@@ -13,7 +13,7 @@ import {
 } from "./route.ts";
 import { nameMatches } from "./romanize.ts";
 import { detectFollowUp } from "./followup.ts";
-import type { Movie, Route } from "./types.ts";
+import type { Movie, Person, Route } from "./types.ts";
 
 export interface PathStep {
   from: string;
@@ -169,6 +169,36 @@ const creditsFor = (g: MovieGraph, id: string): EvidenceMovie["credits"] => {
       }];
     });
 };
+
+/**
+ * 인물 수상 중 근거에 실을 것을 고른다.
+ *
+ * 실측 — "유아인이 《소리도 없이》로 받은 2020년 청룡영화상 연기상은?" 에
+ * "근거에 없습니다" 라고 답했다. **데이터에는 있었다** —
+ * `{ award: "청룡영화상 남우주연상", forTitle: null }`.
+ * 여기서 `.filter(x => x.forTitle)` 로 버리고 있었다.
+ *
+ * 작품이 안 달린 수상은 예외가 아니다. **6,040건 중 3,442건(57%)** 이 그렇다.
+ * 위키데이터의 수상 서술에 수상 자격(P1686)이 늘 붙어 있지는 않기 때문이다.
+ * 절반 넘는 수상 데이터를 조용히 버리고 있었던 것이다.
+ *
+ * 그렇다고 다 실을 수는 없다 — 한 사람에게 최대 50건이 붙어 있다.
+ * 자르되 **질문이 가리킨 상을 먼저** 싣는다 (작품 수상에서 쓴 것과 같은 규칙).
+ * 작품이 달린 것을 그다음에 두는 이유는, 달려 있으면 더 많이 말할 수 있어서다.
+ */
+const PERSON_AWARDS_SHOWN = 6;
+function pickPersonAwards(
+  awards: NonNullable<Person["awards"]>,
+  question: string,
+): NonNullable<Person["awards"]> {
+  const q = question.replace(/\s+/g, "");
+  const asked = (name: string) => (name.match(/[가-힣]{2,}/g) ?? []).some((w) => q.includes(w));
+  return [...awards]
+    .map((a, i) => ({ a, i, hit: asked(a.award) ? 1 : 0, work: a.forTitle ? 1 : 0 }))
+    .sort((x, y) => y.hit - x.hit || y.work - x.work || x.i - y.i)
+    .slice(0, PERSON_AWARDS_SHOWN)
+    .map((x) => x.a);
+}
 
 const toEvidence = (g: MovieGraph, m: Movie, path: Hop[], isSeed: boolean): EvidenceMovie => ({
   id: m.id,
@@ -350,7 +380,7 @@ function askFresh(g: MovieGraph, question: string, gaveUp: string | null): AskRe
   // peopleIn 을 쓴다 — 별칭 판정이 여기만 빠지면 "아이유 수상" 이 안 잡힌다
   for (const p of peopleIn(question, g)) {
     if (!p.awards?.length) continue;
-    for (const a of p.awards.filter((x) => x.forTitle).slice(0, 6)) {
+    for (const a of pickPersonAwards(p.awards, question)) {
       personAwards.push({ person: p.name, award: a.award, year: a.year, forTitle: a.forTitle });
     }
   }
