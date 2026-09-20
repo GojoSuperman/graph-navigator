@@ -114,6 +114,8 @@ form.askbox button:disabled { opacity: 0.55; cursor: progress; }
 }
 .ansItem:hover { background: var(--panel); }
 .ansItem em { font-style: normal; font-weight: 500; font-size: 13px; color: var(--muted); }
+/* 동명이작일 때만 붙는 작품 꼬리표 — 배역 뒤에 한 칸 띄고 흐리게 */
+.ansItem em.dup { margin-left: 6px; opacity: .7; font-size: 12px; }
 
 /* 근거 경로 */
 .chain { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; margin-top: 8px; }

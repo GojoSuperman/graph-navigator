@@ -159,8 +159,28 @@ export function evidenceBlock(r: AskResult): string {
   }
 
   if (r.cast.length) {
-    lines.push("[출연·제작진]");
-    for (const c of r.cast) lines.push(`- ${c.name} (${c.role}${c.as ? `, ${c.as} 역` : ""})`);
+    /**
+     * 동명이작이면 **작품별로 나눠 적는다.** 한 덩어리로 적으면 모델이 두 영화의
+     * 출연진을 한 영화의 것으로 읽는다 — 그러면 '지어내지 않는다' 가 깨진다.
+     * `movie` 는 ask 가 동명이작일 때만 채우므로, 한 편뿐이면 예전 그대로다.
+     */
+    const grouped = r.cast.some((c) => c.movie);
+    if (!grouped) {
+      lines.push("[출연·제작진]");
+      for (const c of r.cast) lines.push(`- ${c.name} (${c.role}${c.as ? `, ${c.as} 역` : ""})`);
+    } else {
+      lines.push("[출연·제작진] — 같은 제목의 작품이 여럿이라 작품별로 적는다");
+      const seen = new Set<string>();
+      for (const c of r.cast) {
+        const key = c.movie?.id ?? "";
+        if (!seen.has(key)) {
+          seen.add(key);
+          const m = c.movie!;
+          lines.push(`  《${m.title}》${m.year ? ` (${m.year})` : ""}${m.director ? ` · 감독 ${m.director}` : ""}`);
+        }
+        lines.push(`  - ${c.name} (${c.role}${c.as ? `, ${c.as} 역` : ""})`);
+      }
+    }
   }
   if (r.characters.length) {
     lines.push("[배역으로 찾은 사람]");

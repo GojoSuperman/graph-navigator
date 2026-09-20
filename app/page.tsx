@@ -215,9 +215,11 @@ export default function Home() {
                   <h2>답</h2>
                   <div className="answers">
                     {res.cast.map((c) => (
-                      <Link key={c.id} className={c.role === "출연" ? "ansItem" : "ansItem crew"}
+                      <Link key={`${c.movie?.id ?? ""}${c.id}`} className={c.role === "출연" ? "ansItem" : "ansItem crew"}
                         href={`/browse?person=${encodeURIComponent(c.id)}`}>
                         {c.name} <em>{c.role === "출연" ? (c.as ?? "출연") : c.role}</em>
+                        {/* 동명이작일 때만 어느 작품인지 붙는다 — 한 편뿐이면 조용하다 */}
+                        {c.movie && <em className="dup">《{c.movie.title}》 {c.movie.year}</em>}
                       </Link>
                     ))}
                     {res.characters.map((c) => (

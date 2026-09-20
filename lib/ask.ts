@@ -70,8 +70,16 @@ export interface AskResult {
   commonPeople: { name: string; acted: boolean; role: string }[];
   /** 인물 교집합의 공통 작품 */
   commonMovies: { id: string; title: string; year: number | null }[];
-  /** 출연진 — "이 영화에 누가 나와?" 의 답. 사람 목록이다 */
-  cast: { id: string; name: string; as: string | null; role: "출연" | "감독" | "각본" }[];
+  /**
+   * 출연진 — "이 영화에 누가 나와?" 의 답. 사람 목록이다.
+   *
+   * `movie` 는 **동명이작일 때만** 채운다. 어느 《괴물》의 출연진인지 밝히지 않으면
+   * 목록만 보고는 구분할 수 없기 때문이다. 한 편뿐이면 비워 두어 화면이 조용하다.
+   */
+  cast: {
+    id: string; name: string; as: string | null; role: "출연" | "감독" | "각본";
+    movie?: { id: string; title: string; year: number | null; director: string | null };
+  }[];
   /** 질문이 가리킨 인물 — 별칭으로 찾았으면 실제 이름이 다를 수 있다 */
   matchedPeople: { name: string; aliases: string[] }[];
   /** 질문에 이름이 나온 사람의 수상 */
@@ -274,16 +282,55 @@ function askFresh(g: MovieGraph, question: string, gaveUp: string | null): AskRe
    */
   const cast: AskResult["cast"] = [];
   if (r.route === "cast") {
-    const target = titlesIn(question, g)[0] ?? g.movie(seeds[0] ?? "");
-    if (target) {
+    /**
+     * 동명이작이면 **고르지 않는다.**
+     *
+     * 실측 — "괴물에 나온 배우들 알려줘" 에 안도 사쿠라·쿠로카와 소야… 가 나왔다.
+     * 말뭉치에 《괴물》이 둘 있다 — 봉준호(2006, 투표 3,239)와 고레에다(2023, 투표 957).
+     * 여기서 `titlesIn(...)[0]` 이 한 편을 골랐고, 그 순서를 정한 것이 **인기**다.
+     * 인기는 최근작에 유리한 지표라 2023 이 이겼다. 투표수로 바꿔도 안 된다 —
+     * 한국·외국이 섞인 동명이작 12개 중 8개에서 여전히 외국 작품이 이긴다.
+     *
+     * 애초에 **고를 근거가 질문에 없다.** 사람이 그냥 "괴물" 이라고 했으면
+     * 사람도 어느 쪽인지 모른다. 그래서 둘 다 싣고 **어느 작품인지 밝힌다** —
+     * 이 프로젝트가 '답을 지어내지 않는다' 고 한 것과 같은 자리다.
+     */
+    const first = titlesIn(question, g)[0] ?? g.movie(seeds[0] ?? "");
+    const targets = first
+      ? [...g.movies.values()]
+          .filter((m) => m.title === first.title)
+          /**
+           * 순서는 **한국 작품 먼저**, 그다음 투표수. 배열 순서에 기대면
+           * 수집 순서가 바뀔 때 조용히 뒤집힌다. 한국 영화를 앞에 두는 것은
+           * 이 도구가 한국 영화 내비게이터이고, 외국 작품은 인물을 따라
+           * 1홉 확장으로 들어온 **다리**이기 때문이다 (README 수집 범위 참고).
+           */
+          .sort((a, b) =>
+            (a.originalLanguage === "ko" ? 0 : 1) - (b.originalLanguage === "ko" ? 0 : 1) ||
+            b.voteCount - a.voteCount)
+          .slice(0, 3)
+      : [];
+    const many = targets.length > 1;
+    // 여러 편이면 한 편당 줄 수를 줄인다 — 근거 블록이 두 배로 부풀지 않도록
+    const per = many ? 12 : 25;
+    for (const target of targets) {
       const rank = (e: { kind: string; order?: number }) =>
         e.kind === "DIRECTED" ? -2 : e.kind === "WROTE" ? -1 : (e.order ?? 99);
-      for (const e of g.creditsOf(target.id).sort((a, b) => rank(a) - rank(b)).slice(0, 25)) {
+      const credits = g.creditsOf(target.id).sort((a, b) => rank(a) - rank(b));
+      const director = credits.find((e) => e.kind === "DIRECTED");
+      const label = many
+        ? {
+            id: target.id, title: target.title, year: target.year,
+            director: director ? (g.person(director.from)?.name ?? null) : null,
+          }
+        : undefined;
+      for (const e of credits.slice(0, per)) {
         const p = g.person(e.from);
         if (!p) continue;
         cast.push({
           id: p.id, name: p.name, as: e.as ?? null,
           role: e.kind === "DIRECTED" ? "감독" : e.kind === "WROTE" ? "각본" : "출연",
+          ...(label ? { movie: label } : {}),
         });
       }
     }
