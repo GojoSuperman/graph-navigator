@@ -41,10 +41,10 @@ export const romanize = (s: string): string => syllables(s).join("");
 
 /**
  * 표기 흔들림을 뭉갠다. **양쪽에 똑같이 적용**하므로 정확도보다 일관성이 중요하다.
- *   Seok-do / Suk-do / Sokdo  →  전부 같은 모양으로
- */
-/**
- * 표기 흔들림을 뭉갠다. **양쪽에 똑같이 적용**하므로 정확도보다 일관성이 중요하다.
+ *   Seok-do / Suk-do  →  같은 모양으로 (말뭉치 실측: 석 계열 589마디가 이 둘로 갈려 있다)
+ *   Ji-yeong / Ji-young  →  같은 모양으로 (영 단독 2,093마디 중 yeong 309 · young 1,517)
+ *
+ * 규칙에 없는 표기는 그대로 어긋난다 — 예: Sok-do 는 맞지 않는다(말뭉치에 없어서 두었다).
  *
  * ⚠️ 이 규칙들은 **음절 안에서만** 적용해야 한다. 음절을 이어 붙인 뒤 적용하면
  * 경계를 넘어 망가진다 — 조태오(조|태|오)를 붙이면 "jotaeo" 가 되고, 태의 'e' 와
@@ -62,6 +62,9 @@ function normPart(s: string): string {
     .replace(/ui/g, "i")          // 희 hui → hee (Sook-hee)
     .replace(/oo/g, "u")          // Woo-jin → Wu-jin
     .replace(/wu/g, "u")
+    // 영·경·정을 TMDB 는 Young·Kyoung·Joung 으로도 적는다. 표기법(yeong)은
+    // 아래 eo→u 로 뭉개지지만 ou 표기는 그대로 남아 **같은 글자가 어긋났다.**
+    .replace(/ou/g, "u")          // Ji-young → Ji-yung (= 지영 jiyeong → jiyung)
     .replace(/eo/g, "u")          // Seok → Suk, Seong → Sung
     .replace(/eu/g, "u")
     .replace(/ae/g, "e")
@@ -72,7 +75,10 @@ function normPart(s: string): string {
     .replace(/c/g, "g")           // Ki-taek → gi-taeg
     // 이·임 성씨는 Lee/Lim 으로 적는다. 모음 정리가 끝난 뒤에 떼어야
     // "Lee" → "li" → "i" 가 된다 (앞에서 떼면 "lee" 라 걸리지 않는다).
-    .replace(/^l(?=i)/, "");
+    .replace(/^l(?=i)/, "")
+    // 같은 성씨를 Yi 로도 적는다 — 말뭉치 실측 Lee 877마디 · **Yi 171마디**.
+    // 마디 전체가 "yi" 일 때만 떼어 Ying·Yin·Yip 같은 중국어 이름을 건드리지 않는다.
+    .replace(/^yi$/, "i");
 }
 
 /** 겹자음 정리는 **이어 붙인 뒤** 한 번만 — 양쪽에 같은 시점에 적용해야 한다 */
@@ -84,13 +90,17 @@ export const loose = (s: string) => squash(normPart(s));
 /**
  * 한글 이름이 로마자 배역명과 같은 이름인가.
  *
- * ⚠️ 단순 부분 문자열로 보면 조용히 망가진다. 실측으로 잡은 사고 —
- *   "김치찌개" 의 **김치** → `gimji` ⊂ `Kim Ji-young`(김지영)
- * 두 글자 한글이 로마자 '성+이름' 한가운데에 통째로 먹힌다.
+ * ⚠️ 단순 부분 문자열로 보면 조용히 망가진다. 두 글자 한글이 로마자
+ * '성+이름' 한가운데에 통째로 먹히기 때문이다 — "임지" 를 뭉갠 `imji` 는
+ * `Kim Ji-young` 을 이어 붙인 `gimjiyung` 안에 그대로 들어 있다.
  *
  * 그래서 **음절 경계**를 요구한다. 로마자 이름은 공백·하이픈으로 마디가 나뉘므로,
  * 그 마디들과 대조한다. "기택" 은 `Kim Ki-taek` 의 마디 `Ki`+`taek` 와 맞고,
- * "김치" 는 `Kim`·`Ji`·`young` 어디와도 통째로 맞지 않는다.
+ * "임지" 는 어느 마디 묶음과도 맞지 않는다.
+ *
+ * ⚠️ **마디 경계에 딱 맞는 오탐은 이 규칙으로 못 막는다.** 치 → chi → (ch→j) → ji 라서
+ * "김치" 는 `Kim`+`Ji` 와 맞는다. 앞단(route.ts 의 흔한말·용언 어미 필터)이 걸러 주는 데
+ * 기대고 있는 자리다 — test/romanize.test.ts 에 한계로 박아 두었다.
  */
 export function nameMatches(korean: string, roman: string): boolean {
   if (!korean || !roman) return false;

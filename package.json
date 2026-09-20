@@ -16,6 +16,7 @@
     "awards": "node scripts/fetch-awards.ts",
     "graph": "node scripts/build-graph.ts",
     "eval": "node scripts/evaluate.ts",
+    "eval:answer": "node --env-file-if-exists=.env.local scripts/evaluate-answer.ts",
     "ask": "node scripts/ask.ts"
   },
   "packageManager": "pnpm@11.5.0",

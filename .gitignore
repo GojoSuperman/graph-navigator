@@ -19,5 +19,8 @@ node_modules/
 .next/
 out/
 next-env.d.ts
+tsconfig.tsbuildinfo
 data/raw.prev.json
+# 답변 채점 캐시 — 키에 프롬프트가 들어 있어 스스로 무효화된다 (재현은 다시 돌리면 된다)
+data/answer-cache.json
 .vercel

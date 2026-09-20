@@ -51,8 +51,12 @@ export interface AskResult {
   seeds: { id: string; title: string }[];
   /** 배역으로 찾은 사람 — "기택 역을 맡은 배우는?" 의 실제 답 */
   characters: { person: string; movie: string; as: string }[];
-  /** 작품 교집합의 공통 참여자 */
-  commonPeople: { name: string; acted: boolean }[];
+  /**
+   * 작품 교집합의 공통 참여자.
+   * `role` 은 **그 작품들에서 실제로 맡은 것**이다 — "제작진" 이라고만 적었더니
+   * "공통 감독은?" 에 "근거에 감독 정보가 없다" 고 답하는 사고가 났다.
+   */
+  commonPeople: { name: string; acted: boolean; role: string }[];
   /** 인물 교집합의 공통 작품 */
   commonMovies: { id: string; title: string; year: number | null }[];
   /** 출연진 — "이 영화에 누가 나와?" 의 답. 사람 목록이다 */
@@ -276,7 +280,15 @@ function askFresh(g: MovieGraph, question: string, gaveUp: string | null): AskRe
     cast,
     matchedPeople: ps.map((p) => ({ name: p.name, aliases: p.aliases ?? [] })),
     characters: [...new Map(characters.map((c) => [`${c.person}|${c.movie}`, c])).values()].slice(0, 6),
-    commonPeople: cp.people.map((p) => ({ name: p.name, acted: p.acted !== false })),
+    commonPeople: cp.people.map((p) => {
+      const kinds = new Set(
+        cp.movies.flatMap((mid) => g.creditsOf(mid).filter((e) => e.from === p.id).map((e) => e.kind)),
+      );
+      const role = [...kinds]
+        .map((k) => (k === "DIRECTED" ? "감독" : k === "WROTE" ? "각본" : "출연"))
+        .join("·");
+      return { name: p.name, acted: p.acted !== false, role: role || "참여" };
+    }),
     commonMovies: shared,
     personAwards: personAwards.slice(0, 8),
     evidence: got.movies.map((m) =>

@@ -14,7 +14,7 @@
 import type { AskResult } from "./ask.ts";
 
 const BASE = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
-const MODEL = process.env.OPENAI_MODEL || "gpt-4.1-mini";
+export const MODEL = process.env.OPENAI_MODEL || "gpt-4.1-mini";
 
 export interface AnswerResult {
   text: string | null;
@@ -23,7 +23,7 @@ export interface AnswerResult {
   model?: string;
 }
 
-const SYSTEM = `너는 영화 정보를 **주어진 근거만으로** 답하는 도우미다.
+export const SYSTEM = `너는 영화 정보를 **주어진 근거만으로** 답하는 도우미다.
 
 규칙
 1. 아래 「근거」에 적힌 사실만 쓴다. 근거에 없으면 "확인되지 않습니다" 라고 말한다.
@@ -110,8 +110,13 @@ function termCheck(r: AskResult): string[] {
   return rows;
 }
 
-/** 모델에게 보여 줄 근거 — 화면에 뜨는 것과 같은 내용이어야 한다 */
-function evidenceBlock(r: AskResult): string {
+/**
+ * 모델에게 보여 줄 근거 — 화면에 뜨는 것과 같은 내용이어야 한다.
+ *
+ * 내보내는 이유: 답변 채점(scripts/evaluate-answer.ts)이 **모델이 실제로 본 것**에
+ * 대고 재야 하기 때문이다. 근거를 따로 다시 조립하면 재는 대상이 달라진다.
+ */
+export function evidenceBlock(r: AskResult): string {
   const lines: string[] = [];
 
   /**
@@ -137,9 +142,14 @@ function evidenceBlock(r: AskResult): string {
     lines.push("[두 사람이 함께 나온 작품]");
     for (const m of r.commonMovies) lines.push(`- 《${m.title}》${m.year ? ` (${m.year})` : ""}`);
   }
+  /**
+   * 역할을 적어 준다. "(출연 아님, 제작진)" 만으로는 **감독인지 각본인지 알 수 없어서**
+   * "《추격자》와 《황해》의 공통 감독은?" 에 "근거에 감독 정보가 없다" 고 답했다 —
+   * 나홍진이 바로 윗줄에 적혀 있는데도. 그래프에는 DIRECTED 엣지가 분명히 있다.
+   */
   if (r.commonPeople.length) {
     lines.push("[여러 작품에 모두 참여한 사람]");
-    for (const p of r.commonPeople) lines.push(`- ${p.name}${p.acted ? "" : " (출연 아님, 제작진)"}`);
+    for (const p of r.commonPeople) lines.push(`- ${p.name} (${p.role})`);
   }
   if (r.personAwards.length) {
     lines.push("[수상]");
@@ -152,7 +162,9 @@ function evidenceBlock(r: AskResult): string {
     for (const e of r.evidence) {
       const path = e.path.length ? `  ← ${e.path.map((s) => `${s.fromLabel}에서 ${s.via}를 거쳐`).join(", ")}` : "";
       const aw = e.awards.length ? ` · 수상: ${e.awards.slice(0, 3).map((a) => a.award).join(", ")}` : "";
-      lines.push(`- 《${e.title}》${e.year ? ` (${e.year})` : ""} · ${e.genres.join("/")} · 평점 ${e.voteAverage.toFixed(1)}${aw}${path}`);
+      // 연도에 **'개봉' 이라고 적는다.** 괄호 안 숫자만 두었더니 모델이 그것을 개봉
+      // 연도로 읽지 못하고 "근거에 명시되어 있지 않습니다" 라고 거절했다 — 9문항이 그랬다.
+      lines.push(`- 《${e.title}》${e.year ? ` (${e.year}년 개봉)` : ""} · ${e.genres.join("/")} · 평점 ${e.voteAverage.toFixed(1)}${aw}${path}`);
       if (e.overview) lines.push(`    줄거리: ${e.overview.replace(/\s+/g, " ").slice(0, 160)}`);
     }
   }
