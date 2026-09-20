@@ -9,7 +9,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { MovieGraph } from "../lib/graph.ts";
-import { seedsFromTitle, titlesIn, bracketedTitle } from "../lib/route.ts";
+import { seedsFromTitle, titlesIn, bracketedTitle, stripRoleTitle } from "../lib/route.ts";
 import type { GraphData, Movie } from "../lib/types.ts";
 
 const mv = (title: string, popularity = 0): Movie => ({
@@ -94,5 +94,31 @@ describe("titlesIn — 질문에 등장하는 모든 작품", () => {
    */
   test("두 글자 제목이 남의 이름 앞부분에 걸리지 않는다", () => {
     assert.deepEqual(found("아이유가 나온 영화는?"), []);
+  });
+});
+
+describe("stripRoleTitle — 경칭을 뗀 배역 후보", () => {
+  /**
+   * 실측 — "박해일이 세종대왕을 연기한 영화는?" 이 배역을 하나도 못 찾았다.
+   * TMDB 의 배역명은 `King Sejong` 이고 nameMatches("세종", "King Sejong") 은
+   * 참인데, 조사만 떼는 규칙으로는 세종대왕을 → 세종대왕 → 세종대 까지다.
+   */
+  test("경칭 앞부분을 후보로 내놓는다", () => {
+    assert.deepEqual(stripRoleTitle("세종대왕"), ["세종"]);
+    assert.deepEqual(stripRoleTitle("이순신장군"), ["이순신"]);
+  });
+
+  test("경칭이 없으면 아무것도 안 내놓는다", () => {
+    assert.deepEqual(stripRoleTitle("오대수"), []);
+    assert.deepEqual(stripRoleTitle("기택"), []);
+  });
+
+  /**
+   * 앞이 두 글자 미만이면 버린다 — 한 글자 후보는 배역명과 우연히 너무 잘 걸린다.
+   * (한 글자 제목을 괄호 없이 열지 않는 것과 같은 이유다)
+   */
+  test("경칭 앞이 한 글자면 후보가 되지 않는다", () => {
+    assert.deepEqual(stripRoleTitle("왕대왕"), []);
+    assert.deepEqual(stripRoleTitle("대왕"), []);
   });
 });

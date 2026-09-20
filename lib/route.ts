@@ -459,6 +459,30 @@ const NOT_A_CHARACTER = new Set([
   "최근", "요즘", "올해", "당시", "처음", "마지막", "다른", "무엇을",
 ]);
 
+/**
+ * 경칭을 뗀 형태도 배역 후보로 본다.
+ *
+ * 실측 — "박해일이 **세종대왕**을 연기한 영화는?" 이 배역을 하나도 못 찾았다.
+ * TMDB 의 배역명은 `King Sejong` 이고, `nameMatches("세종", "King Sejong")` 은
+ * **참**인데 `nameMatches("세종대왕", ...)` 은 거짓이다. 조사만 한두 글자 떼는
+ * 기존 규칙으로는 `세종대왕을 → 세종대왕 → 세종대` 까지밖에 못 간다.
+ *
+ * 사람은 역사 인물을 **경칭과 함께** 부르는데 TMDB 는 그러지 않는다.
+ * 그 차이를 여기서 메운다.
+ *
+ * 위험을 재고 넣었다 — 평가셋 152문항 전체에서 경칭을 떼어 **새로 생기는 후보는
+ * 1개**(h060 의 '세종')이고, 그것 말고는 배역명과 걸리는 것이 없다.
+ */
+const ROLE_TITLES = ["대왕", "장군", "왕자", "공주", "스님", "선생", "박사", "교수", "여사", "대통령", "왕비", "황제"];
+export function stripRoleTitle(w: string): string[] {
+  const out: string[] = [];
+  for (const t of ROLE_TITLES) {
+    const i = w.indexOf(t);
+    if (i >= 2) out.push(w.slice(0, i));
+  }
+  return out;
+}
+
 export function seedsFromCharacter(question: string, g: MovieGraph, top = 3): string[] {
   // 2~4글자 한글 덩어리를 배역 후보로 본다 (조사가 붙은 형태도 앞에서 잘라 본다)
   // 어절의 **앞쪽**에서만 후보를 뽑는다. 뒤에 붙은 조사를 한 글자씩 떼어 본다.
@@ -466,7 +490,7 @@ export function seedsFromCharacter(question: string, g: MovieGraph, top = 3): st
   for (const raw of question.split(/\s+/)) {
     const w = (raw.match(/[가-힣]{2,7}/) ?? [""])[0];
     if (isConjugated(w)) continue;   // 나오고 · 대결하는 — 사람 이름이 아니다
-    for (const c of [w, w.slice(0, w.length - 1), w.slice(0, w.length - 2)]) {
+    for (const c of [w, w.slice(0, w.length - 1), w.slice(0, w.length - 2), ...stripRoleTitle(w)]) {
       if (c.length >= 2 && !NOT_A_CHARACTER.has(c)) cands.add(c);
     }
   }

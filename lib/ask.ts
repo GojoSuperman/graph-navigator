@@ -9,7 +9,7 @@
 import { MovieGraph, collectEvidence, DEFAULT_BUDGET, describePath, type Hop } from "./graph.ts";
 import {
   route as routeOf, findSeeds, canAnswer, checkPremise,
-  commonPeople, peopleIn, titlesIn, seedsFromPeopleIntersection, mentions,
+  commonPeople, peopleIn, titlesIn, seedsFromPeopleIntersection, mentions, stripRoleTitle,
 } from "./route.ts";
 import { nameMatches } from "./romanize.ts";
 import { detectFollowUp } from "./followup.ts";
@@ -256,7 +256,8 @@ function askFresh(g: MovieGraph, question: string, gaveUp: string | null): AskRe
 
   // ── 배역 → 배우 ────────────────────────────────────────────────────
   // "기택 역을 맡은 배우는?" 의 답은 영화가 아니라 **사람**이다.
-  const words = (question.match(/[가-힣]{2,5}/g) ?? []).flatMap((w) => [w, w.slice(0, -1)]);
+  // 경칭을 뗀 형태까지 본다 — "세종대왕" 은 TMDB 에 "King Sejong" 으로 들어 있다
+  const words = (question.match(/[가-힣]{2,5}/g) ?? []).flatMap((w) => [w, w.slice(0, -1), ...stripRoleTitle(w)]);
   const characters: AskResult["characters"] = [];
   const scope = titlesIn(question, g).length ? titlesIn(question, g).map((m) => m.id) : got.movies.map((m) => m.id);
   for (const id of scope) {
