@@ -187,6 +187,20 @@ async function main() {
   // 동명이인 후보 — 괄호로 구분된 정본이 있는데 맨몸 이름도 따로 남은 경우
   const homonym = nodes.filter((n) => titles.some((t) => t !== n.id && t.replace(/\s*\(.+\)$/, "") === n.id));
 
+  /**
+   * **숫자를 파일로 낸다.** 화면과 문서가 손으로 적은 숫자를 들고 있으면 낡는다 —
+   * `세종`/`세종대` 를 병합해 노드가 1개 줄었는데 화면·README·REPORT 다섯 곳이
+   * 옛 숫자를 그대로 띄우고 있었다. 영화 쪽 `data/stats.json` 이 있는 이유가 이것이다.
+   */
+  await writeFile(join(OUT, "stats.json"), JSON.stringify({
+    docs: titles.length,
+    nodes: nodes.length,
+    edges: edges.length,
+    quotes: edges.reduce((s, e) => s + e.quotes.length, 0),
+    withDoc: nodes.filter((n) => n.era).length,
+    builtAt: new Date().toISOString(),
+  }, null, 2) + "\n");
+
   await writeFile(join(OUT, "graph.json"), JSON.stringify({
     builtAt: new Date().toISOString(),
     nodes, edges,

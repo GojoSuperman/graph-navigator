@@ -11,6 +11,8 @@
 import { useEffect, useState } from "react";
 import { storedKey } from "../Settings.tsx";
 import { VIZ_EVENT } from "../VizDock.tsx";
+// 숫자는 build-graph 가 쓴 것을 읽는다 — 손으로 적으면 낡는다
+import stats from "@/data/history/stats.json";
 
 const KIND_LABEL: Record<string, string> = {
   PARTICIPATED_IN: "참여", FOUNDED: "설립", MEMBER_OF: "소속",
@@ -80,9 +82,9 @@ export default function HistoryPage() {
       <header className="hd">
         <h1>🏛 한국사 네비게이터</h1>
         <p>
-          조선(1392)부터 현재까지 위키백과 140건에서 <b>인물·조직·사건</b> 1,135개와
-          관계 1,620개를 뽑았습니다. <b>한 문서만 읽어서는 안 나오는 답</b>을
-          다리를 건너 찾습니다.
+          조선(1392)부터 현재까지 위키백과 {stats.docs}건에서 <b>인물·조직·사건</b>{" "}
+          {stats.nodes.toLocaleString()}개와 관계 {stats.edges.toLocaleString()}개를 뽑았습니다.{" "}
+          <b>한 문서만 읽어서는 안 나오는 답</b>을 다리를 건너 찾습니다.
         </p>
       </header>
 
