@@ -17,6 +17,7 @@ import { join } from "node:path";
 import { BM25 } from "../../lib/bm25.ts";
 import { build } from "../../lib/pipeline.ts";
 import { HistoryGraph } from "../../lib/history/graph.ts";
+import { loadHistoryDocs } from "../../lib/history/data.ts";
 import { historyDomain } from "../../lib/domains/history.ts";
 
 const DATA = join(import.meta.dirname, "..", "..", "data", "history");
@@ -42,7 +43,9 @@ const bm = new BM25(docs);
 
 const items = gold.items.filter((i: any) => i.type === "answerable");
 const refusals = gold.items.filter((i: any) => i.type === "refusal");
+const nodeDocs = await loadHistoryDocs();
 const app = build(historyDomain(g, {
+  docs: nodeDocs,
   record: (name, s: any) => void appendFile(RUNS, JSON.stringify({
     at: new Date().toISOString(), domain: name, question: s.question,
     trace: s.trace, routeKind: s.routeKind, seeds: s.seedIds,

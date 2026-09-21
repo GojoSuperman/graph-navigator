@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { build } from "@/lib/pipeline.ts";
 import { HistoryGraph } from "@/lib/history/graph.ts";
 import { historyDomain, pathLines } from "@/lib/domains/history.ts";
+import { loadHistoryDocs } from "@/lib/history/data.ts";
 import { evidenceBlock, generate, MODEL } from "@/lib/history/answer.ts";
 import { KIND_LABEL, type EdgeKind } from "@/lib/history/config.ts";
 
@@ -35,7 +36,8 @@ export async function POST(req: Request) {
   if (!question) return Response.json({ error: "질문이 비어 있습니다" }, { status: 400 });
 
   const g = await graph();
-  const s: any = await build(historyDomain(g)).invoke({ question });
+  const docs = await loadHistoryDocs();
+  const s: any = await build(historyDomain(g, { docs })).invoke({ question });
 
   // **배포본에서는 쓰는 사람의 키만 쓴다.** 서버 키를 폴백으로 두면 공개된 순간
   // 남의 지갑으로 모델이 돌아간다. 로컬 개발에서만 .env.local 로 떨어진다.

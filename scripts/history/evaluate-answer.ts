@@ -16,6 +16,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { build } from "../../lib/pipeline.ts";
 import { HistoryGraph } from "../../lib/history/graph.ts";
+import { loadHistoryDocs } from "../../lib/history/data.ts";
 import { historyDomain } from "../../lib/domains/history.ts";
 import { evidenceBlock, generate, MODEL } from "../../lib/history/answer.ts";
 
@@ -25,7 +26,8 @@ const CACHE = join(OUT, "answer-cache.json");
 
 const g = new HistoryGraph(JSON.parse(await readFile(join(DATA, "graph.json"), "utf-8")));
 const gold = JSON.parse(await readFile(join(DATA, "golden.json"), "utf-8"));
-const app = build(historyDomain(g));
+const docs = await loadHistoryDocs();
+const app = build(historyDomain(g, { docs }));
 const cache: Record<string, string> = await readFile(CACHE, "utf-8").then(JSON.parse).catch(() => ({}));
 
 const norm = (s: string) => s.replace(/[·・.\s《》「」"'()]/g, "");

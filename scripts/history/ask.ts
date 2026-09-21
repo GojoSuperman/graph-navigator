@@ -11,12 +11,14 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { build } from "../../lib/pipeline.ts";
 import { HistoryGraph } from "../../lib/history/graph.ts";
+import { loadHistoryDocs } from "../../lib/history/data.ts";
 import { historyDomain, evidenceBlock, pathLines } from "../../lib/domains/history.ts";
 
 const data = JSON.parse(await readFile(
   join(import.meta.dirname, "..", "..", "data", "history", "graph.json"), "utf-8"));
 const g = new HistoryGraph(data);
-const app = build(historyDomain(g));
+const docs = await loadHistoryDocs();
+const app = build(historyDomain(g, { docs }));
 
 const q = process.argv.slice(2).join(" ") || "안창호가 세운 조직은?";
 const s: any = await app.invoke({ question: q });

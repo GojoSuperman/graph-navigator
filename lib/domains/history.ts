@@ -23,6 +23,10 @@ export function historyDomain(g: HistoryGraph, opts: {
   record?: (name: string, s: Ask) => void;
   /** 6단계 스윕이 값을 바꿔 가며 재려면 주입할 수 있어야 한다 */
   budget?: { maxHops: number; maxNodes: number; perKind: number };
+  /** 문서 본문 — BM25 색인에 넣는다. 없으면 근거 문장만으로 색인한다 */
+  docs?: Map<string, string>;
+  /** BM25 폴백을 인정할 최소 점수. 낮추면 범위 밖 질문도 답하려 든다 */
+  minScore?: number;
 } = {}): Domain {
   // 이름 → 노드 id. 별칭도 같이 건다
   const byKey = new Map<string, string>();
@@ -30,12 +34,47 @@ export function historyDomain(g: HistoryGraph, opts: {
     byKey.set(key(n.id), n.id);
     for (const a of n.aliases) if (!byKey.has(key(a))) byKey.set(key(a), n.id);
   }
-  // 씨앗을 못 찾았을 때만 쓰는 최후 수단
+  /**
+   * 씨앗을 이름으로 못 찾았을 때 쓰는 최후 수단.
+   *
+   * **이름만 색인했던 것이 결함이었다.** "실학을 연구한 학자는?" 같은 질문은
+   * 개체 이름이 없어서 영영 못 찾았다. 이제 **근거 문장 + 문서 본문**까지 색인한다 —
+   * 평가의 BM25 대조군과 같은 것을 본다.
+   */
+  const quoteOf = new Map<string, string[]>();
+  for (const e of g.edges) for (const n of [e.from, e.to]) {
+    (quoteOf.get(n) ?? quoteOf.set(n, []).get(n)!).push(...e.quotes);
+  }
   const bm = new BM25([...g.nodes.values()].map((n) => ({
     id: n.id,
     title: [n.id, ...n.aliases].join(" "),
-    text: [n.type, n.era ?? ""].join(" "),
+    text: [
+      n.type, n.era ?? "",
+      (quoteOf.get(n.id) ?? []).join(" "),
+      opts.docs?.get(n.id) ?? "",
+    ].join(" "),
   })));
+  /**
+   * BM25 폴백 점수 하한 = **22.** 골든셋으로 스윕해 골랐다
+   * (`scripts/history/sweep-minscore.ts`, `tuned` + 거절 문항만).
+   *
+   * ```
+   * 하한   기존문항   거절     개념질문
+   *   0      95%      50%     100%    ← 범위 밖을 절반 놓친다
+   *  18      95%      88%     100%
+   *  22      95%     100%      80%    ← 여기를 택했다
+   *  30      95%     100%      60%
+   * ```
+   * **거절을 100% 로 지키는 쪽을 택했다.** 18 에서 새는 것은 딱 한 문항인데,
+   * "2026년 대통령 선거 결과는?" 이 `대한민국 제1공화국 · 노태우 · 김대중` 을
+   * 씨앗으로 물어 온다 — "대통령 선거" 가 코퍼스와 어휘가 겹치기 때문이다.
+   * **코퍼스에 없는 시점을 묻는 질문은 BM25 점수로 가릴 수 없다.**
+   *
+   * 대가로 "실학을 연구한 학자는?" 을 놓친다(점수 20.5 < 22). 근거가 없을 때
+   * 지어내지 않는 것이 이 도구의 값어치이므로 **그쪽을 지켰다.** 이 교환을
+   * REPORT 에 적는다.
+   */
+  const MIN = opts.minScore ?? 22;
 
   /** 질문에 통째로 들어 있는 노드 이름들. **긴 이름부터** 본다 (부분 겹침 방지) */
   const mentioned = (q: string): string[] => {
@@ -57,8 +96,16 @@ export function historyDomain(g: HistoryGraph, opts: {
         return { routeKind: "out_of_scope", reason: "한국사 그래프가 다루지 않는 주제입니다", refusalReason: "한국사 그래프가 다루지 않는 주제입니다" };
       }
       const hits = mentioned(s.question);
+      /**
+       * **이름을 못 찾아도 여기서 거절하지 않는다.**
+       *
+       * 전에는 바로 `out_of_scope` 였다. 그래서 `seeds` 의 BM25 폴백이
+       * **도달 불가능한 죽은 코드**였다 — 설계는 "제목 → 별칭 → BM25 (앞이 실패하면
+       * 뒤로)" 인데 구현이 첫 단계에서 끊고 있었다.
+       * 범위 밖 판정은 위의 OFF_DOMAIN 과, BM25 점수 하한이 함께 맡는다.
+       */
       if (!hits.length) {
-        return { routeKind: "out_of_scope", reason: "질문에서 그래프의 개체를 찾지 못했습니다", refusalReason: "질문에 나온 인물·조직·사건을 그래프에서 찾지 못했습니다" };
+        return { routeKind: "search", reason: "이름이 안 걸려 본문 검색으로 찾습니다" };
       }
       // 두 개 이상 걸리면 **다리 질문** — 사이를 이어야 한다
       return { routeKind: hits.length >= 2 ? "bridge" : "lookup", reason: `개체 ${hits.length}개를 찾았습니다 — ${hits.join(" · ")}` };
@@ -69,8 +116,19 @@ export function historyDomain(g: HistoryGraph, opts: {
     seeds: (s) => {
       const hit = mentioned(s.question);
       if (hit.length) return { seedIds: hit.slice(0, 4) };
-      const fallback = bm.search(s.question, 3).map((r) => r.id);
-      return { seedIds: fallback, reason: fallback.length ? "이름으로 못 찾아 BM25 로 찾았습니다" : s.reason };
+      // **점수 하한**이 범위 밖을 막는다. 실측: 관련 질문 20~42점 / 범위 밖 7~11점
+      const found = bm.search(s.question, 3).filter((r) => r.score >= MIN);
+      if (!found.length) {
+        return {
+          seedIds: [],
+          reason: "이름도 본문 검색도 실패했습니다",
+          refusalReason: "질문에 맞는 인물·조직·사건을 그래프에서 찾지 못했습니다",
+        };
+      }
+      return {
+        seedIds: found.map((r) => r.id),
+        reason: `본문 검색으로 찾았습니다 — ${found.map((r) => `${r.id}(${r.score.toFixed(0)})`).join(" · ")}`,
+      };
     },
 
     // ── expand ─────────────────────────────────────────────────────────
