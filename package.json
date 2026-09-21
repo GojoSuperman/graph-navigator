@@ -2,7 +2,7 @@
   "name": "graph-navigator",
   "private": true,
   "type": "module",
-  "homepage": "https://movie-navigator.vercel.app",
+  "homepage": "https://graph-navigator-kr.vercel.app",
   "repository": {
     "type": "git",
     "url": "https://github.com/GojoSuperman/graph-navigator.git"
