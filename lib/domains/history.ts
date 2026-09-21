@@ -27,6 +27,8 @@ export function historyDomain(g: HistoryGraph, opts: {
   docs?: Map<string, string>;
   /** BM25 폴백을 인정할 최소 점수. 낮추면 범위 밖 질문도 답하려 든다 */
   minScore?: number;
+  /** 이름이 걸린 노드가 이 차수 미만이면 BM25 로 씨앗을 보강한다 */
+  thinDegree?: number;
 } = {}): Domain {
   // 이름 → 노드 id. 별칭도 같이 건다
   const byKey = new Map<string, string>();
@@ -75,6 +77,11 @@ export function historyDomain(g: HistoryGraph, opts: {
    * REPORT 에 적는다.
    */
   const MIN = opts.minScore ?? 22;
+  /**
+   * 이 차수 미만이면 **막다른 노드**로 보고 BM25 로 씨앗을 보강한다.
+   * 값은 골든셋으로 스윕해 고른다 (`sweep-thin.ts`).
+   */
+  const THIN = opts.thinDegree ?? 5;
 
   /** 질문에 통째로 들어 있는 노드 이름들. **긴 이름부터** 본다 (부분 겹침 방지) */
   const mentioned = (q: string): string[] => {
@@ -115,7 +122,36 @@ export function historyDomain(g: HistoryGraph, opts: {
     //  제목·별칭 대조 → 그래도 없으면 BM25. **앞이 실패해야 뒤로 간다**
     seeds: (s) => {
       const hit = mentioned(s.question);
-      if (hit.length) return { seedIds: hit.slice(0, 4) };
+      /**
+       * **이름이 걸렸다고 그걸로 끝내지 않는다.**
+       *
+       * "조선시대 한글을 만드신 왕은 누구야?" 에서 `조선`(차수 3)과 `한글`(차수 1)이
+       * 걸렸다. 둘 다 **막다른 노드**다 — 답으로 가는 문은 질문에 없는 단어
+       * 《훈민정음》(세종 ─이끔─▶ 훈민정음)이었다.
+       *
+       * 이름이 걸려도 **그 노드들의 차수가 낮으면 BM25 를 함께 써서 씨앗을 보강한다.**
+       * 질문의 단어가 곧 답으로 가는 문이라는 보장이 없다.
+       */
+      if (hit.length) {
+        const best = Math.max(...hit.map((id) => g.node(id)?.degree ?? 0));
+        if (best >= THIN) return { seedIds: hit.slice(0, 4) };
+        /**
+         * **하한을 여기서는 낮춘다.**
+         *
+         * `MIN`(=22)은 "이름이 하나도 안 걸린 질문" 을 막으려고 둔 값이다. 이미 이름이
+         * 걸린 질문은 **범위 안이라는 것이 확인된 상태**라, 같은 하한을 걸면 짧은 질문이
+         * 통째로 막힌다 — "한글을 만든 왕은?" 은 단어가 3개뿐이라 BM25 최고점이
+         * 17.4 였다. 범위 판정은 이미 끝났으므로 절반만 요구한다.
+         */
+        const extra = bm.search(s.question, 3)
+          .filter((r) => r.score >= MIN / 2 && !hit.includes(r.id))
+          .map((r) => r.id);
+        if (!extra.length) return { seedIds: hit.slice(0, 4) };
+        return {
+          seedIds: [...hit, ...extra].slice(0, 5),
+          reason: `이름 ${hit.join("·")} 이 막다른 노드(차수 ${best})라 본문 검색으로 보강했습니다 — ${extra.join(" · ")}`,
+        };
+      }
       // **점수 하한**이 범위 밖을 막는다. 실측: 관련 질문 20~42점 / 범위 밖 7~11점
       const found = bm.search(s.question, 3).filter((r) => r.score >= MIN);
       if (!found.length) {

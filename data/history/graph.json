@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-09-21T05:03:54.756Z",
+  "builtAt": "2026-09-21T12:15:06.913Z",
   "nodes": [
     {
       "id": "윤치호",
@@ -666,6 +666,13 @@
       "degree": 7
     },
     {
+      "id": "세종",
+      "type": "Person",
+      "era": "조선 전·중기",
+      "aliases": [],
+      "degree": 7
+    },
+    {
       "id": "안중근",
       "type": "Person",
       "era": "구한말·일제",
@@ -1119,13 +1126,6 @@
       "degree": 4
     },
     {
-      "id": "세종",
-      "type": "Person",
-      "era": "조선 전·중기",
-      "aliases": [],
-      "degree": 4
-    },
-    {
       "id": "대한국민당",
       "type": "Organization",
       "era": null,
@@ -1178,13 +1178,6 @@
     },
     {
       "id": "김장생",
-      "type": "Person",
-      "era": null,
-      "aliases": [],
-      "degree": 4
-    },
-    {
-      "id": "세종대",
       "type": "Person",
       "era": null,
       "aliases": [],
@@ -1508,13 +1501,6 @@
       "id": "천도교",
       "type": "Organization",
       "era": null,
-      "aliases": [],
-      "degree": 3
-    },
-    {
-      "id": "훈민정음",
-      "type": "Event",
-      "era": "조선 전·중기",
       "aliases": [],
       "degree": 3
     },
@@ -2414,6 +2400,13 @@
       "id": "대한제국",
       "type": "Organization",
       "era": "조선 후기",
+      "aliases": [],
+      "degree": 2
+    },
+    {
+      "id": "훈민정음",
+      "type": "Event",
+      "era": "조선 전·중기",
       "aliases": [],
       "degree": 2
     },
@@ -16174,10 +16167,12 @@
       "to": "훈민정음",
       "kind": "LED",
       "quotes": [
-        "훈민정음(訓民正音)을 창제하였다."
+        "훈민정음(訓民正音)을 창제하였다.",
+        "세종대왕이 창제한 문자의 명칭이자 훈민정음의 창제원리와 사용법등을 해설해 놓은 책의 제목이기도 하다."
       ],
       "docs": [
-        "세종"
+        "세종",
+        "훈민정음"
       ]
     },
     {
@@ -24568,7 +24563,7 @@
       ]
     },
     {
-      "from": "세종대",
+      "from": "세종",
       "to": "정몽주",
       "kind": "STUDIED_UNDER",
       "quotes": [
@@ -25113,7 +25108,7 @@
       ]
     },
     {
-      "from": "세종대",
+      "from": "세종",
       "to": "한글창제",
       "kind": "LED",
       "quotes": [
@@ -26392,18 +26387,7 @@
       ]
     },
     {
-      "from": "세종대",
-      "to": "훈민정음",
-      "kind": "LED",
-      "quotes": [
-        "세종대왕이 창제한 문자의 명칭이자 훈민정음의 창제원리와 사용법등을 해설해 놓은 책의 제목이기도 하다."
-      ],
-      "docs": [
-        "훈민정음"
-      ]
-    },
-    {
-      "from": "세종대",
+      "from": "세종",
       "to": "집현전",
       "kind": "MEMBER_OF",
       "quotes": [
@@ -26596,7 +26580,7 @@
     }
   ],
   "stats": {
-    "nodes": 1135,
-    "edges": 1620
+    "nodes": 1134,
+    "edges": 1619
   }
 }

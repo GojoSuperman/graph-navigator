@@ -99,6 +99,21 @@ async function main() {
       const cands = titles.filter((t) => key(t).includes(key(clean)));
       if (cands.length === 1) return cands[0];
     }
+    /**
+     * **경칭이 붙은 이름** — 위의 부분 포함은 "이름 ⊂ 제목" 방향만 본다.
+     * 그런데 `세종대`·`정조대왕` 처럼 **제목 ⊂ 이름** 인 경우가 있다.
+     *
+     * 실측: `세종`(차수 4)과 `세종대`(차수 4)가 따로 남아 "한글을 만든 왕은?" 에
+     * 답이 안 나왔다 — 훈민정음·집현전이 두 노드로 갈려 있었기 때문이다.
+     * 지금은 1건뿐이지만 재수집하면 `영조대`·`정조대왕` 이 언제든 나온다.
+     */
+    for (const suf of ["대왕", "대", "왕", "임금", "선생", "장군", "황제"]) {
+      if (!clean.endsWith(suf)) continue;
+      const base = clean.slice(0, -suf.length);
+      if (base.length < 2) continue;
+      const hit2 = canon.get(key(base));
+      if (hit2) return hit2;
+    }
     return null;
   };
 
