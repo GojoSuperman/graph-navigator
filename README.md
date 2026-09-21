@@ -3,7 +3,7 @@
 한국 영화와 **그 인물이 참여한 외국 영화**를 하나의 그래프로 잇고,
 인물이라는 다리를 건너 **근거와 함께** 답하는 GraphRAG 에이전트.
 
-**▶ [movie-navigator.vercel.app](https://movie-navigator.vercel.app)**
+**▶ [graph-navigator-kr.vercel.app](https://graph-navigator-kr.vercel.app)**
 — 답변 문장을 보려면 우측 상단 **설정**에서 OpenAI 키를 넣는다.
 키 없이도 근거(작품·인물·다리)와 3D 는 그대로 나온다.
 
