@@ -1,0 +1,740 @@
+{
+ "name": "한국사 네비게이터 골든셋",
+ "version": "1",
+ "created": "2026-09-21",
+ "note": "문항을 그래프에서 기계적으로 뽑지 않았다. 후보 경로마다 **근거 문장을 읽고** 그 문장이 답을 뒷받침할 때만 넣었다. 근거의 출처는 위키백과 원문이므로, 그래프가 틀렸으면 이 골든셋이 그것을 잡아낸다(그래프로 그래프를 채점하면 순환이 된다). STUDIED_UNDER 는 표본 정확도가 33%라 문항에서 뺐다 — 설계서 §11.",
+ "splits": {
+  "tuned": "스키마·별칭·허브 기준을 맞추며 본 문항. 여기 숫자는 일반화의 근거가 되지 못한다.",
+  "holdout": "**코드를 동결한 뒤 한 번만 채점한다.** 이 묶음의 숫자가 실제 실력이다.",
+  "bridge-hard": "**BM25 가 원리적으로 못 푸는 문항.** 답의 근거 문서에 질문의 개체 이름이 한 번도 안 나온다 — 키워드 검색으로는 그 문서에 닿을 방법이 없고, 다리를 건너야만 닿는다. tuned/holdout 에서 BM25 가 그래프를 이긴 뒤(전체 91% vs 88%) 원인을 진단해 **나중에 추가한 묶음**이다. 기존 묶음의 69%는 기대 문서가 질문에 이름이 나온 문서였다 — 홉을 탈 이유가 없는 문항이었다."
+ },
+ "items": [
+  {
+   "id": "h1-01",
+   "type": "answerable",
+   "hops": 1,
+   "era": "조선 전·중기",
+   "split": "tuned",
+   "question": "이순신이 참전한 전쟁은 무엇인가요?",
+   "answer": "임진왜란",
+   "path": "이순신 ─PARTICIPATED_IN─▶ 임진왜란",
+   "quote": "임진왜란 발발 직전인 1592년에 이순신은 일본은 섬이니 일본의 수군이 강할 것이라고 예단해",
+   "expected": [
+    "선조 (조선)"
+   ]
+  },
+  {
+   "id": "h1-02",
+   "type": "answerable",
+   "hops": 1,
+   "era": "조선 전·중기",
+   "split": "tuned",
+   "question": "임진왜란으로 건물이 불타 교육이 중단된 기관은 어디인가요?",
+   "answer": "성균관",
+   "path": "임진왜란 ─AFFECTED─▶ 성균관",
+   "quote": "1592년(선조 25)에 임진왜란이 일어나 성균관 등의 학교건물이 불타 없어지고 학교교육은 한동안 공백기를 맞이하게 되었다.",
+   "expected": [
+    "성균관"
+   ]
+  },
+  {
+   "id": "h1-03",
+   "type": "answerable",
+   "hops": 1,
+   "era": "조선 전·중기",
+   "split": "holdout",
+   "question": "성삼문이 훈민정음 창제에 참여한 기관은 어디인가요?",
+   "answer": "집현전",
+   "path": "성삼문 ─MEMBER_OF─▶ 집현전",
+   "quote": "그는 세종대왕을 도와 집현전에서 《훈민정음》 창제에 참여하였고",
+   "expected": [
+    "성삼문"
+   ]
+  },
+  {
+   "id": "h1-04",
+   "type": "answerable",
+   "hops": 1,
+   "era": "조선 후기",
+   "split": "tuned",
+   "question": "갑오개혁 때 군국기무처의 회의총재를 맡은 사람은 누구인가요?",
+   "answer": "김홍집",
+   "path": "김홍집 ─LED─▶ 군국기무처",
+   "quote": "군국기무처의 회의총재는 영의정 김홍집이 맡았다.",
+   "expected": [
+    "갑오개혁"
+   ]
+  },
+  {
+   "id": "h1-05",
+   "type": "answerable",
+   "hops": 1,
+   "era": "조선 후기",
+   "split": "tuned",
+   "question": "박제가가 국제적 안목을 갖추게 된 계기가 된 활동은 무엇인가요?",
+   "answer": "청나라 사행",
+   "path": "박제가 ─PARTICIPATED_IN─▶ 청나라 사행",
+   "quote": "박제가는 네 차례에 걸친 청나라 사행(使行)을 통해 100명이 넘는 중국 지식인들과 교유하면서 국제적 안목을 갖춘 글로벌 지식인이었다",
+   "expected": [
+    "박제가"
+   ]
+  },
+  {
+   "id": "h1-06",
+   "type": "answerable",
+   "hops": 1,
+   "era": "조선 후기",
+   "split": "holdout",
+   "question": "대동법을 지지한 김육을 중심으로 만들어진 서인의 파벌은 무엇인가요?",
+   "answer": "한당",
+   "path": "김육 ─MEMBER_OF─▶ 한당",
+   "quote": "김육의 대동법을 지지하는 한당이라는 새로운 파벌이 나타나게 되었다",
+   "expected": [
+    "김육"
+   ]
+  },
+  {
+   "id": "h1-07",
+   "type": "answerable",
+   "hops": 1,
+   "era": "구한말·일제",
+   "split": "tuned",
+   "question": "김구가 지휘한 농민 운동은 무엇인가요?",
+   "answer": "동학 농민 운동",
+   "path": "김구 ─PARTICIPATED_IN─▶ 동학 농민 운동",
+   "quote": "동학 농민 운동이 일어나자 김구는 동학군을 지휘했다.",
+   "expected": [
+    "김구"
+   ]
+  },
+  {
+   "id": "h1-08",
+   "type": "answerable",
+   "hops": 1,
+   "era": "구한말·일제",
+   "split": "tuned",
+   "question": "김규식이 파리강화회의에 대표로 파견될 때 소속한 단체는 어디인가요?",
+   "answer": "신한청년당",
+   "path": "김규식 ─MEMBER_OF─▶ 신한청년당",
+   "quote": "김규식 - 신한청년당 대표로 파리강화회의에 파견",
+   "expected": [
+    "3·1 운동"
+   ]
+  },
+  {
+   "id": "h1-09",
+   "type": "answerable",
+   "hops": 1,
+   "era": "해방·현대",
+   "split": "holdout",
+   "question": "민주당을 탈당한 김영삼이 입당한 당은 어디인가요?",
+   "answer": "신민당",
+   "path": "김영삼 ─MEMBER_OF─▶ 신민당",
+   "quote": "민주당을 탈당한 김영삼은 신민당에 입당하여 야당인사가 되었다.",
+   "expected": [
+    "김영삼"
+   ]
+  },
+  {
+   "id": "h1-10",
+   "type": "answerable",
+   "hops": 1,
+   "era": "해방·현대",
+   "split": "holdout",
+   "question": "해방 전 김일성이 소속되었던 소련군 부대는 어디인가요?",
+   "answer": "88여단",
+   "path": "김일성 ─MEMBER_OF─▶ 88여단",
+   "quote": "해방 전 김일성이 소속되었던 소련군 88여단은",
+   "expected": [
+    "김일성"
+   ]
+  },
+  {
+   "id": "h2-01",
+   "type": "answerable",
+   "hops": 2,
+   "era": "조선 전·중기",
+   "split": "tuned",
+   "question": "이순신이 참전한 전쟁 때문에 건물이 불탄 교육기관은 어디인가요?",
+   "answer": "성균관",
+   "path": "이순신 ─PARTICIPATED_IN─▶ 임진왜란 ─AFFECTED─▶ 성균관",
+   "quote": "1592년(선조 25)에 임진왜란이 일어나 성균관 등의 학교건물이 불타 없어지고",
+   "expected": [
+    "선조 (조선)",
+    "성균관"
+   ]
+  },
+  {
+   "id": "h2-02",
+   "type": "answerable",
+   "hops": 2,
+   "era": "조선 전·중기",
+   "split": "tuned",
+   "question": "임진왜란으로 불탄 성균관의 재건 공사를 주관한 사람은 누구인가요?",
+   "answer": "이수광",
+   "path": "임진왜란 ─AFFECTED─▶ 성균관 ◀─LED─ 이수광",
+   "quote": "임진왜란이 끝나고 명군이 철수한 다음 해인 1601년 성균관 대사성 이수광의 주관 하에 공사가 진행되어",
+   "expected": [
+    "성균관"
+   ]
+  },
+  {
+   "id": "h2-03",
+   "type": "answerable",
+   "hops": 2,
+   "era": "조선 후기",
+   "split": "tuned",
+   "question": "소현세자가 볼모로 끌려가게 된 전쟁에 함께 있었던 왕은 누구인가요?",
+   "answer": "인조",
+   "path": "소현세자 ─PARTICIPATED_IN─▶ 병자호란 ◀─PARTICIPATED_IN─ 인조 (조선)",
+   "quote": "병자호란(丙子胡亂) 이후 청나라에 볼모로 끌려간 소현세자(昭顯世子)는",
+   "expected": [
+    "소현세자",
+    "인조 (조선)"
+   ]
+  },
+  {
+   "id": "h2-04",
+   "type": "answerable",
+   "hops": 2,
+   "era": "조선 후기",
+   "split": "holdout",
+   "question": "유길준이 일본군 파병을 요청했던 사건을 주도한 인물은 누구인가요?",
+   "answer": "흥선대원군",
+   "path": "유길준 ─PARTICIPATED_IN─▶ 임오군란 ◀─LED─ 흥선대원군",
+   "quote": "임오군란 무렵 유길준과 윤치호는 대원군을 타도하기 위한 일본군의 파병을 청하는 서한을 일본정부에 보냈다.",
+   "expected": [
+    "유길준",
+    "흥선대원군"
+   ]
+  },
+  {
+   "id": "h2-05",
+   "type": "answerable",
+   "hops": 2,
+   "era": "구한말·일제",
+   "split": "tuned",
+   "question": "김규식이 파리강화회의 대표로 파견된 단체에 함께 속했던 인물은 누구인가요?",
+   "answer": "김구 · 여운형 · 신채호",
+   "path": "김규식 ─MEMBER_OF─▶ 신한청년당 ◀─MEMBER_OF─ 김구",
+   "quote": "1918년 김규식, 여운형, 신채호, 김구 등이 주축이 되어 신한 청년당이 결성되었다.",
+   "expected": [
+    "3·1 운동"
+   ]
+  },
+  {
+   "id": "h2-06",
+   "type": "answerable",
+   "hops": 2,
+   "era": "구한말·일제",
+   "split": "tuned",
+   "question": "김구가 부총재로 선출된 기구를 이끈 사람은 누구인가요?",
+   "answer": "이승만",
+   "path": "김구 ─MEMBER_OF─▶ 민족통일총본부 ◀─LED─ 이승만",
+   "quote": "6월 29일 민족통일총본부가 설치되자 김구는 부총재에 선출됐다.",
+   "expected": [
+    "김구",
+    "이승만"
+   ]
+  },
+  {
+   "id": "h2-07",
+   "type": "answerable",
+   "hops": 2,
+   "era": "구한말·일제",
+   "split": "tuned",
+   "question": "1948년 김규식이 참여한 협상에 함께 참여한 인물은 누구인가요?",
+   "answer": "김구",
+   "path": "김규식 ─PARTICIPATED_IN─▶ 남북협상 ◀─PARTICIPATED_IN─ 김구",
+   "quote": "1948년 3월 김구·김규식 등과 함께 남한만의 단독정부수립에 반대했으며, 4월 김구·김규식 등과 남북협상에",
+   "expected": [
+    "김규식",
+    "김구"
+   ]
+  },
+  {
+   "id": "h2-08",
+   "type": "answerable",
+   "hops": 2,
+   "era": "구한말·일제",
+   "split": "holdout",
+   "question": "윤치영이 회원으로 활동한 모임의 핵심 인물은 누구인가요?",
+   "answer": "윤치호",
+   "path": "윤치영 ─MEMBER_OF─▶ 흥업구락부 ◀─MEMBER_OF─ 윤치호",
+   "quote": "흥업구락부의 핵심 인물이던 윤치호와 신흥우, 유억겸, 정춘수 등은 전쟁 기간 중 일제에 협력했다.",
+   "expected": [
+    "윤치영",
+    "윤치호"
+   ]
+  },
+  {
+   "id": "h2-09",
+   "type": "answerable",
+   "hops": 2,
+   "era": "구한말·일제",
+   "split": "holdout",
+   "question": "신채호가 무오 독립선언에 함께 참여한 인물은 누구인가요?",
+   "answer": "조소앙",
+   "path": "신채호 ─PARTICIPATED_IN─▶ 무오 독립선언 ◀─PARTICIPATED_IN─ 조소앙",
+   "quote": "무오 독립선언 - 1919년 2월 1일, 중국 동북부 길림성에서 조소앙, 신채호 선생 등 만주와 러시아지역의 항일 독립운동지도자 39명이",
+   "expected": [
+    "3·1 운동"
+   ]
+  },
+  {
+   "id": "h2-10",
+   "type": "answerable",
+   "hops": 2,
+   "era": "해방·현대",
+   "split": "tuned",
+   "question": "김영삼이 입당한 신민당에서 대선후보로 정해진 사람은 누구인가요?",
+   "answer": "윤보선",
+   "path": "김영삼 ─MEMBER_OF─▶ 신민당 ◀─MEMBER_OF─ 윤보선",
+   "quote": "신한당과 민중당은 신민당으로 통합하고 당 대표에는 유진오,대선후보는 윤보선으로 하기로 극적으로 합의하였다.",
+   "expected": [
+    "김영삼",
+    "윤보선"
+   ]
+  },
+  {
+   "id": "h2-11",
+   "type": "answerable",
+   "hops": 2,
+   "era": "해방·현대",
+   "split": "tuned",
+   "question": "김영삼이 대표로 취임한 당을 1992년에 탈당한 사람은 누구인가요?",
+   "answer": "노태우",
+   "path": "김영삼 ─LED─▶ 민주자유당 ◀─MEMBER_OF─ 노태우",
+   "quote": "1992년 10월 5일 노태우는 민주자유당을 탈당하고 거국중립내각 구성을 선언",
+   "expected": [
+    "김영삼",
+    "노태우"
+   ]
+  },
+  {
+   "id": "h2-12",
+   "type": "answerable",
+   "hops": 2,
+   "era": "해방·현대",
+   "split": "tuned",
+   "question": "이승만 정권이 자행한 1960년 부정선거에서 표가 안 나왔다고 언급된 야당 인사는 누구인가요?",
+   "answer": "장면",
+   "path": "이승만 ─LED─▶ 3·15 부정선거 ◀─PARTICIPATED_IN─ 장면",
+   "quote": "3·15 부정선거에서 야당 표가 전혀 안 나오고, 장면 박사 표가 안 나오고",
+   "expected": [
+    "이승만",
+    "장면"
+   ]
+  },
+  {
+   "id": "h2-13",
+   "type": "answerable",
+   "hops": 2,
+   "era": "해방·현대",
+   "split": "holdout",
+   "question": "4·19 혁명 이후 학생 시위대를 지지한 인물이 이끈 원내 일파는 무엇인가요?",
+   "answer": "자유당",
+   "path": "4·19 혁명 ◀─PARTICIPATED_IN─ 장면 ─LED─▶ 자유당 (대한민국)",
+   "quote": "원내 자유당은 장면을 리더로 하는 일파",
+   "expected": [
+    "4·19 혁명",
+    "장면"
+   ]
+  },
+  {
+   "id": "h2-14",
+   "type": "answerable",
+   "hops": 2,
+   "era": "해방·현대",
+   "split": "holdout",
+   "question": "장택상이 결성에 참여한 당에 함께한 인물은 누구인가요?",
+   "answer": "조병옥 · 윤보선 · 김도연 · 김준연",
+   "path": "장택상 ─MEMBER_OF─▶ 한국민주당",
+   "quote": "9월 16일 장택상은 조병옥, 윤보선, 김도연, 김준연 등과 한국민주당의 결성에 참여하였다.",
+   "expected": [
+    "장택상"
+   ]
+  },
+  {
+   "id": "h3-01",
+   "type": "answerable",
+   "hops": 3,
+   "era": "구한말·일제",
+   "split": "tuned",
+   "question": "김규식이 속한 단체의 동료가 참여한 또 다른 항일 단체는 무엇인가요?",
+   "answer": "의열단",
+   "path": "김규식 ─MEMBER_OF─▶ 신한청년당 ◀─MEMBER_OF─ 신채호 ─MEMBER_OF─▶ 의열단",
+   "quote": "1923년 의열단장 김원봉이 신채호를 만나기 위해 북경을 방문하고 만나서 “의열단의 정신을 문서화 해달라”고 요청했다.",
+   "expected": [
+    "3·1 운동",
+    "신채호"
+   ]
+  },
+  {
+   "id": "h3-02",
+   "type": "answerable",
+   "hops": 3,
+   "era": "구한말·일제",
+   "split": "tuned",
+   "question": "이승만이 국무총리로 추대된 정부의 내무총장이 세운 단체는 무엇인가요?",
+   "answer": "신민회",
+   "path": "이승만 ─LED─▶ 상해 임시정부 ◀─MEMBER_OF─ 안창호 ─FOUNDED─▶ 신민회",
+   "quote": "안창호는 신민회(新民會)를 경성부에서 조직하였다.",
+   "expected": [
+    "이승만",
+    "안창호"
+   ]
+  },
+  {
+   "id": "h3-03",
+   "type": "answerable",
+   "hops": 3,
+   "era": "해방·현대",
+   "split": "tuned",
+   "question": "이승만이 총재를 맡은 당의 원내 일파를 이끈 인물이 지지한 혁명은 무엇인가요?",
+   "answer": "4·19 혁명",
+   "path": "이승만 ─LED─▶ 자유당 (대한민국) ◀─LED─ 장면 ─PARTICIPATED_IN─▶ 4·19 혁명",
+   "quote": "4·19 혁명 이후 장면은 학생 시위대를 지지하는 입장을 취하였다.",
+   "expected": [
+    "이승만",
+    "장면",
+    "4·19 혁명"
+   ]
+  },
+  {
+   "id": "h3-04",
+   "type": "answerable",
+   "hops": 3,
+   "era": "해방·현대",
+   "split": "holdout",
+   "question": "이승만이 속했던 임시정부를 환영한 인물이 결성에 참여한 당은 무엇인가요?",
+   "answer": "한국민주당",
+   "path": "이승만 ─MEMBER_OF─▶ 대한민국 임시정부 ◀─MEMBER_OF─ 장택상 ─MEMBER_OF─▶ 한국민주당",
+   "quote": "9월 16일 장택상은 조병옥, 윤보선, 김도연, 김준연 등과 한국민주당의 결성에 참여하였다.",
+   "expected": [
+    "이승만",
+    "장택상"
+   ]
+  },
+  {
+   "id": "h3-05",
+   "type": "answerable",
+   "hops": 3,
+   "era": "구한말·일제",
+   "split": "holdout",
+   "question": "김규식이 임시정부 대표로 탄원서를 낸 그 정부를 환영한 인물이 참여한 당은 무엇인가요?",
+   "answer": "한국민주당",
+   "path": "김규식 ─MEMBER_OF─▶ 대한민국 임시정부 ◀─MEMBER_OF─ 장택상 ─MEMBER_OF─▶ 한국민주당",
+   "quote": "1945년 11월 대한민국 임시정부와 임정 요인들이 귀국할 때 장택상은 전폭적 지지환영을 하여",
+   "expected": [
+    "김규식",
+    "장택상"
+   ]
+  },
+  {
+   "id": "h3-06",
+   "type": "answerable",
+   "hops": 3,
+   "era": "해방·현대",
+   "split": "holdout",
+   "question": "이승만이 창당을 권고받은 당에 참여한 인물이 환영한 정부는 무엇인가요?",
+   "answer": "대한민국 임시정부",
+   "path": "이승만 ─FOUNDED─▶ 한국민주당 ◀─MEMBER_OF─ 장택상 ─MEMBER_OF─▶ 대한민국 임시정부",
+   "quote": "1945년 11월 대한민국 임시정부와 임정 요인들이 귀국할 때 장택상은 전폭적 지지환영을 하여",
+   "expected": [
+    "이승만",
+    "장택상"
+   ]
+  },
+  {
+   "id": "x-01",
+   "type": "answerable",
+   "hops": 2,
+   "era": "시대 교차",
+   "split": "tuned",
+   "question": "임진왜란으로 불탄 교육기관을 재건한 인물은 어느 시대 사람인가요?",
+   "answer": "이수광 (조선 중기·후기)",
+   "path": "임진왜란 ─AFFECTED─▶ 성균관 ◀─LED─ 이수광",
+   "quote": "1601년 성균관 대사성 이수광의 주관 하에 공사가 진행되어",
+   "expected": [
+    "성균관"
+   ]
+  },
+  {
+   "id": "x-02",
+   "type": "answerable",
+   "hops": 2,
+   "era": "시대 교차",
+   "split": "tuned",
+   "question": "조선 후기 실학자들이 저술에 쓰지 않았다고 언급된 문자는 무엇인가요?",
+   "answer": "한글",
+   "path": "정약용 ─PARTICIPATED_IN─▶ 한글",
+   "quote": "조선 후기 실학자였던 정약용, 박지원, 박제가 등도 한글 사용을 외면하고 100% 한문으로만 저술을 남겼다.",
+   "expected": [
+    "한글"
+   ]
+  },
+  {
+   "id": "x-03",
+   "type": "answerable",
+   "hops": 2,
+   "era": "시대 교차",
+   "split": "holdout",
+   "question": "동학 농민 운동을 지휘한 인물이 나중에 이끈 정부 기구는 무엇인가요?",
+   "answer": "대한민국 임시정부",
+   "path": "김구 ─PARTICIPATED_IN─▶ 동학 농민 운동 / 김구 ─LED─▶ 대한민국 임시정부",
+   "quote": "1926년 12월부터 1927년까지 1930년부터 1933년까지 임시정부 국무령을",
+   "expected": [
+    "김구"
+   ]
+  },
+  {
+   "id": "x-04",
+   "type": "answerable",
+   "hops": 3,
+   "era": "시대 교차",
+   "split": "holdout",
+   "question": "갑오개혁 때 군국기무처를 맡았던 인물이 속한 시대와 해방 이후를 잇는 인물이 있나요? 있다면 누구인가요?",
+   "answer": "근거에 없음 — 김홍집과 해방 이후 인물을 잇는 경로가 그래프에 없습니다",
+   "path": "(경로 없음 — 시대 교차의 한계를 재는 문항)",
+   "quote": "",
+   "expected": []
+  },
+  {
+   "id": "r-01",
+   "type": "refusal",
+   "hops": 0,
+   "era": "-",
+   "split": "tuned",
+   "question": "오늘 서울 날씨 어때?",
+   "answer": "거절",
+   "path": "",
+   "quote": "",
+   "expected": []
+  },
+  {
+   "id": "r-02",
+   "type": "refusal",
+   "hops": 0,
+   "era": "-",
+   "split": "tuned",
+   "question": "삼성전자 주가 알려줘",
+   "answer": "거절",
+   "path": "",
+   "quote": "",
+   "expected": []
+  },
+  {
+   "id": "r-03",
+   "type": "refusal",
+   "hops": 0,
+   "era": "-",
+   "split": "tuned",
+   "question": "송강호가 출연한 영화는?",
+   "answer": "거절 — 남의 도메인(영화)",
+   "path": "",
+   "quote": "",
+   "expected": []
+  },
+  {
+   "id": "r-04",
+   "type": "refusal",
+   "hops": 0,
+   "era": "-",
+   "split": "tuned",
+   "question": "봉준호 감독의 대표작을 알려줘",
+   "answer": "거절 — 남의 도메인(영화)",
+   "path": "",
+   "quote": "",
+   "expected": []
+  },
+  {
+   "id": "r-05",
+   "type": "refusal",
+   "hops": 0,
+   "era": "-",
+   "split": "holdout",
+   "question": "파이썬으로 정렬하는 코드 짜줘",
+   "answer": "거절",
+   "path": "",
+   "quote": "",
+   "expected": []
+  },
+  {
+   "id": "r-06",
+   "type": "refusal",
+   "hops": 0,
+   "era": "-",
+   "split": "holdout",
+   "question": "나폴레옹이 벌인 전쟁은 무엇인가요?",
+   "answer": "거절 — 한국사 범위 밖",
+   "path": "",
+   "quote": "",
+   "expected": []
+  },
+  {
+   "id": "r-07",
+   "type": "refusal",
+   "hops": 0,
+   "era": "-",
+   "split": "holdout",
+   "question": "김치찌개 끓이는 법 알려줘",
+   "answer": "거절",
+   "path": "",
+   "quote": "",
+   "expected": []
+  },
+  {
+   "id": "r-08",
+   "type": "refusal",
+   "hops": 0,
+   "era": "-",
+   "split": "holdout",
+   "question": "2026년 대통령 선거 결과는?",
+   "answer": "거절 — 코퍼스에 없는 시점",
+   "path": "",
+   "quote": "",
+   "expected": []
+  },
+  {
+   "id": "bh-01",
+   "type": "answerable",
+   "hops": 2,
+   "era": "조선 후기",
+   "split": "bridge-hard",
+   "question": "규장각을 세운 왕이 만든 호위 군대는 무엇인가요?",
+   "answer": "장용영",
+   "path": "규장각 ◀─FOUNDED─ 정조 ─FOUNDED─▶ 장용영",
+   "quote": "장용영(壯勇營)은 1785년 조선 정조가 만든 호위 군대이다.",
+   "expected": [
+    "장용영"
+   ]
+  },
+  {
+   "id": "bh-02",
+   "type": "answerable",
+   "hops": 2,
+   "era": "조선 후기",
+   "split": "bridge-hard",
+   "question": "남궁억이 속했던 협회에서 고문으로 선출된 사람은 누구인가요?",
+   "answer": "서재필",
+   "path": "남궁억 ─MEMBER_OF─▶ 독립협회 ◀─MEMBER_OF─ 서재필",
+   "quote": "서재필은 독립협회 고문에 선출되어 윤치호와 함께 협회의 제반사무를 총괄하였다.",
+   "expected": [
+    "서재필"
+   ]
+  },
+  {
+   "id": "bh-03",
+   "type": "answerable",
+   "hops": 2,
+   "era": "조선 후기",
+   "split": "bridge-hard",
+   "question": "갑오개혁을 주도한 인물이 조직한 사회단체는 무엇인가요?",
+   "answer": "국민경제회",
+   "path": "갑오개혁 ◀─PARTICIPATED_IN─ 유길준 ─FOUNDED─▶ 국민경제회",
+   "quote": "유길준은 사회단체인 국민경제회를 조직하여 활동했고,",
+   "expected": [
+    "유길준"
+   ]
+  },
+  {
+   "id": "bh-04",
+   "type": "answerable",
+   "hops": 2,
+   "era": "구한말·일제",
+   "split": "bridge-hard",
+   "question": "김구가 가입했던 비밀결사의 다른 간부는 누구인가요?",
+   "answer": "윤치호 · 이동휘 · 양기탁",
+   "path": "김구 ─MEMBER_OF─▶ 신민회 ◀─MEMBER_OF─ 윤치호",
+   "quote": "1911년 윤치호, 이동휘, 양기탁, 김구 등 신민회 간부들을 대량으로 검거, 검속하여 신민회를 해산",
+   "expected": [
+    "윤치호"
+   ]
+  },
+  {
+   "id": "bh-05",
+   "type": "answerable",
+   "hops": 2,
+   "era": "구한말·일제",
+   "split": "bridge-hard",
+   "question": "독립협회를 세운 인물들 중 한 사람이 1921년에 만든 대학 설립 단체는 무엇인가요?",
+   "answer": "조선민립대학설립기성준비회",
+   "path": "독립협회 ◀─FOUNDED─ 이상재 ─FOUNDED─▶ 조선민립대학설립기성준비회",
+   "quote": "1921년 1월 이상재, 이승훈, 윤치호, 김성수, 송진우, 유진태, 오세창 등은 조선민립대학설립기성",
+   "expected": [
+    "일제강점기"
+   ]
+  },
+  {
+   "id": "bh-06",
+   "type": "answerable",
+   "hops": 2,
+   "era": "해방·현대",
+   "split": "bridge-hard",
+   "question": "김종필이 창당 조직한 당의 대통령 후보였던 사람은 누구인가요?",
+   "answer": "박정희",
+   "path": "김종필 ─FOUNDED─▶ 민주공화당 (대한민국) ◀─MEMBER_OF─ 박정희",
+   "quote": "제6대 대통령 선거에서 민주공화당의 박정희는 경제개발의 성과와 비전을 내세우면서",
+   "expected": [
+    "박정희"
+   ]
+  },
+  {
+   "id": "bh-07",
+   "type": "answerable",
+   "hops": 2,
+   "era": "해방·현대",
+   "split": "bridge-hard",
+   "question": "노무현이 1997년에 입당한 당을 창당한 사람은 누구인가요?",
+   "answer": "김대중",
+   "path": "노무현 ─MEMBER_OF─▶ 새정치국민회의 ◀─FOUNDED─ 김대중",
+   "quote": "1995년 7월 18일, 김대중은 정계복귀를 선언하였고, 민주당 탈당파들과 함께 새정치국민회의를 창당",
+   "expected": [
+    "김대중"
+   ]
+  },
+  {
+   "id": "bh-08",
+   "type": "answerable",
+   "hops": 2,
+   "era": "해방·현대",
+   "split": "bridge-hard",
+   "question": "6월 민주 항쟁 때 시국수습방안을 내놓은 인물이 대표최고위원을 맡은 당은 무엇인가요?",
+   "answer": "민주정의당",
+   "path": "6월 민주 항쟁 ◀─PARTICIPATED_IN─ 노태우 ─MEMBER_OF─▶ 민주정의당",
+   "quote": "그는 노태우를 민주정의당 대표최고위원으로 선임하고, 노신영, 노재봉, 정호용, 허화평 등을 잠재적 후",
+   "expected": [
+    "노태우"
+   ]
+  },
+  {
+   "id": "bh-09",
+   "type": "answerable",
+   "hops": 2,
+   "era": "해방·현대",
+   "split": "bridge-hard",
+   "question": "4·19 혁명 이후 학생 시위대를 지지한 인물이 속했던 자유당은 무엇으로 불리게 되었나요?",
+   "answer": "원내 자유당",
+   "path": "4·19 혁명 ◀─PARTICIPATED_IN─ 장면 ─MEMBER_OF─▶ 원내 자유당",
+   "quote": "12월에는 원외 자유당이 결성되면서 장면이 속한 자유당은 원내 자유당으로 불리게 되었다.",
+   "expected": [
+    "장면"
+   ]
+  },
+  {
+   "id": "bh-10",
+   "type": "answerable",
+   "hops": 2,
+   "era": "해방·현대",
+   "split": "bridge-hard",
+   "question": "민주공화당을 이끈 인물이 일으킨 정변은 무엇인가요?",
+   "answer": "5.16 군사 정변",
+   "path": "민주공화당 (대한민국) ◀─LED─ 박정희 ─LED─▶ 5.16 군사 정변",
+   "quote": "1961년 박정희를 중심으로 한 군부 세력이 일으킨 5.16 군사정변",
+   "expected": [
+    "대한민국 제2공화국"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,367 @@
+{
+  "ranAt": "2026-09-21T05:26:21.300Z",
+  "split": "tuned",
+  "items": 20,
+  "rows": [
+    {
+      "maxHops": 1,
+      "hubTop": 8,
+      "maxNodes": 40,
+      "perKind": 12,
+      "recall": 0.75,
+      "pathRecall": 0.5583333333333333,
+      "byHop": {
+        "1": "6/6",
+        "2": "8/11",
+        "3": "1/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 24.7
+    },
+    {
+      "maxHops": 2,
+      "hubTop": 8,
+      "maxNodes": 40,
+      "perKind": 12,
+      "recall": 0.85,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "1/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 33.9
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 8,
+      "maxNodes": 40,
+      "perKind": 12,
+      "recall": 0.85,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "1/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 36.95
+    },
+    {
+      "maxHops": 4,
+      "hubTop": 8,
+      "maxNodes": 40,
+      "perKind": 12,
+      "recall": 0.85,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "1/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 37.9
+    },
+    {
+      "maxHops": 5,
+      "hubTop": 8,
+      "maxNodes": 40,
+      "perKind": 12,
+      "recall": 0.85,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "1/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 38.65
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 0,
+      "maxNodes": 40,
+      "perKind": 12,
+      "recall": 0.85,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "1/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 36.95
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 2,
+      "maxNodes": 40,
+      "perKind": 12,
+      "recall": 0.85,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "1/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 36.95
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 4,
+      "maxNodes": 40,
+      "perKind": 12,
+      "recall": 0.85,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "1/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 36.95
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 8,
+      "maxNodes": 40,
+      "perKind": 12,
+      "recall": 0.85,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "1/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 36.95
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 16,
+      "maxNodes": 40,
+      "perKind": 12,
+      "recall": 0.85,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "1/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 36.95
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 32,
+      "maxNodes": 40,
+      "perKind": 12,
+      "recall": 0.8,
+      "pathRecall": 0.6083333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "9/11",
+        "3": "1/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 34.8
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 8,
+      "maxNodes": 20,
+      "perKind": 12,
+      "recall": 0.6,
+      "pathRecall": 0.5583333333333333,
+      "byHop": {
+        "1": "6/6",
+        "2": "6/11",
+        "3": "0/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 19.35
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 8,
+      "maxNodes": 40,
+      "perKind": 12,
+      "recall": 0.85,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "1/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 36.95
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 8,
+      "maxNodes": 80,
+      "perKind": 12,
+      "recall": 0.95,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "3/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 53.65
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 8,
+      "maxNodes": 160,
+      "perKind": 12,
+      "recall": 0.95,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "3/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 53.65
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 8,
+      "maxNodes": 80,
+      "perKind": 4,
+      "recall": 0.8,
+      "pathRecall": 0.5583333333333333,
+      "byHop": {
+        "1": "6/6",
+        "2": "9/11",
+        "3": "1/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 20.3
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 8,
+      "maxNodes": 80,
+      "perKind": 8,
+      "recall": 0.9,
+      "pathRecall": 0.6083333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "2/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 38.35
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 8,
+      "maxNodes": 80,
+      "perKind": 12,
+      "recall": 0.95,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "3/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 53.65
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 8,
+      "maxNodes": 80,
+      "perKind": 24,
+      "recall": 0.95,
+      "pathRecall": 0.6500000000000001,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "3/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 67.8
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 8,
+      "maxNodes": 80,
+      "perKind": 48,
+      "recall": 0.95,
+      "pathRecall": 0.6500000000000001,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "3/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 68.8
+    },
+    {
+      "maxHops": 1,
+      "hubTop": 8,
+      "maxNodes": 80,
+      "perKind": 12,
+      "recall": 0.8,
+      "pathRecall": 0.5583333333333333,
+      "byHop": {
+        "1": "6/6",
+        "2": "8/11",
+        "3": "2/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 27.65
+    },
+    {
+      "maxHops": 2,
+      "hubTop": 8,
+      "maxNodes": 80,
+      "perKind": 12,
+      "recall": 0.95,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "3/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 45.15
+    },
+    {
+      "maxHops": 3,
+      "hubTop": 8,
+      "maxNodes": 80,
+      "perKind": 12,
+      "recall": 0.95,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "3/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 53.65
+    },
+    {
+      "maxHops": 4,
+      "hubTop": 8,
+      "maxNodes": 80,
+      "perKind": 12,
+      "recall": 0.95,
+      "pathRecall": 0.6333333333333334,
+      "byHop": {
+        "1": "6/6",
+        "2": "10/11",
+        "3": "3/3"
+      },
+      "refusal": 1,
+      "avgEvidence": 57.45
+    }
+  ]
+}
