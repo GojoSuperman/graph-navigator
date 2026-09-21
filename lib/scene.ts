@@ -16,7 +16,13 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { HOP_LABEL, HOP_GAP, hopY, boundsOf, placeField, placeFocus, type Placed } from "@/lib/viz.ts";
 
-export interface VizNode { id: string; label: string; hop: number; korean: boolean; isSeed: boolean; poster?: string | null; year?: number | null }
+export interface VizNode {
+  id: string; label: string; hop: number; korean: boolean; isSeed: boolean;
+  /** 영화 — 포스터 경로 */
+  poster?: string | null; year?: number | null;
+  /** 한국사 — 씨앗에서 여기까지 **실제로 탄 경로** 한 줄 (근거 카드가 보여 준다) */
+  path?: string;
+}
 export interface VizEdge { from: string; to: string; via: string }
 export interface VizInput { nodes: VizNode[]; edges: VizEdge[]; refused: boolean }
 export interface FieldData { nodes: { id: string; title: string; korean: boolean }[] }
@@ -27,8 +33,13 @@ export interface SceneApi {
   dispose(): void;
 }
 
-const KO = 0x64b5ff;     // 한국 작품
-const FOREIGN = 0xffb86b; // 외국 작품
+/**
+ * 노드 색 두 갈래. `VizNode.korean` 이 켜지면 KO, 아니면 FOREIGN 이다.
+ * **그 두 갈래가 도메인마다 다른 것을 뜻한다** — 영화는 한국/해외,
+ * 한국사는 인물/조직·사건. 색만 공유하고 이름은 호출부(범례·층 이름)가 정한다.
+ */
+const KO = 0x64b5ff;      // 영화: 한국 작품 · 한국사: 인물
+const FOREIGN = 0xffb86b; // 영화: 외국 작품 · 한국사: 조직·사건
 const BRIDGE = 0x7ee787;  // 다리(선)
 
 /**
@@ -89,6 +100,12 @@ export function createScene(
   field: FieldData | null,
   /** 노드를 누르면 알려 준다 — 포스터 모달을 띄우는 쪽에서 받는다 */
   onPick?: (n: VizNode) => void,
+  /**
+   * 전경형 층 이름. **도메인마다 다르다** — 엔진은 `korean` 플래그를 색 두 갈래로만
+   * 쓰는데, 그 두 갈래가 영화에서는 한국/해외이고 한국사에서는 인물/조직·사건이다.
+   * 하드코딩해 뒀더니 한국사 화면에 "한국 작품" 이 떴다.
+   */
+  fieldLevels: [string, string] = ["🇰🇷 한국 작품", "해외 작품"],
 ): SceneApi {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0b0d12);
@@ -112,12 +129,15 @@ export function createScene(
   controls.target.set(0, -HOP_GAP * 0.8, 0);
 
   /**
-   * 확대하면 라벨도 같이 커진다 (최대 2배).
+   * 확대하면 라벨도 같이 커진다 — 단 **완만하게**.
    *
    * CSS2DRenderer 는 라벨의 transform 을 직접 쓰므로 scale() 을 덧씌울 수 없다.
    * 대신 컨테이너에 CSS 변수를 꽂고 글자 크기·여백이 그 값을 따르게 한다.
-   * 기준은 처음 카메라 거리 — 가까워진 비율만큼 키우되 1~2배로 묶는다
-   * (축소할 때까지 작아지면 멀리서 아무것도 안 읽힌다).
+   *
+   * 처음엔 거리 비율을 **선형으로 최대 2배**까지 썼는데, 한국사 그래프에서
+   * 노드 라벨과 관계 라벨이 함께 두 배가 되어 **글자가 그래프를 덮었다.**
+   * 제곱근으로 완만하게 키우고 상한을 1.45 로 내린다 — 확대하면 커지되
+   * 화면이 글자로 차지는 않는다.
    */
   const baseDistance = camera.position.distanceTo(controls.target);
   let lastZoom = -1;
@@ -130,7 +150,7 @@ export function createScene(
   // ── 층 바닥 ────────────────────────────────────────────────────────
   const layers = new THREE.Group();
   const half = mode === "field" ? 180 : 58;
-  const levels = mode === "field" ? ["🇰🇷 한국 작품", "해외 작품"] : HOP_LABEL.slice(0, 3);
+  const levels = mode === "field" ? fieldLevels : HOP_LABEL.slice(0, 3);
   levels.forEach((name, i) => {
     const y = mode === "field" ? hopY(i * 1.6) : hopY(i);
     const grid = new THREE.GridHelper(half * 2, mode === "field" ? 18 : 8, 0x232a36, 0x232a36);
@@ -378,7 +398,8 @@ export function createScene(
     }
     controls.update();
 
-    const z = Math.min(2, Math.max(1, baseDistance / Math.max(camera.position.distanceTo(controls.target), 1)));
+    const ratio = baseDistance / Math.max(camera.position.distanceTo(controls.target), 1);
+    const z = Math.min(1.45, Math.max(1, Math.sqrt(Math.max(1, ratio))));
     if (Math.abs(z - lastZoom) > 0.01) {
       labelRenderer.domElement.style.setProperty("--viz-zoom", z.toFixed(2));
       lastZoom = z;
