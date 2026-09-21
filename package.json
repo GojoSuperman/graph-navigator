@@ -1,9 +1,12 @@
 {
-  "name": "movie-navigator",
+  "name": "graph-navigator",
   "private": true,
   "type": "module",
   "homepage": "https://movie-navigator.vercel.app",
-  "repository": { "type": "git", "url": "https://github.com/GojoSuperman/movie-navigator.git" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GojoSuperman/graph-navigator.git"
+  },
   "engines": {
     "node": ">=24"
   },
@@ -17,14 +20,22 @@
     "graph": "node scripts/build-graph.ts",
     "eval": "node scripts/evaluate.ts",
     "eval:answer": "node --env-file-if-exists=.env.local scripts/evaluate-answer.ts",
-    "ask": "node scripts/ask.ts"
+    "ask": "node scripts/ask.ts",
+    "history:fetch": "node scripts/history/fetch-wiki.ts",
+    "history:density": "node scripts/history/density.ts",
+    "history:extract": "node --env-file-if-exists=.env.local scripts/history/extract.ts",
+    "history:graph": "node scripts/history/build-graph.ts",
+    "history:ask": "node scripts/history/ask.ts"
   },
   "packageManager": "pnpm@11.5.0",
   "dependencies": {
+    "@langchain/core": "^1.2.12",
+    "@langchain/langgraph": "^1.4.16",
     "next": "^16.3.5",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "three": "^0.186.0"
+    "three": "^0.186.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^26.6.1",
