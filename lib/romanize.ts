@@ -116,7 +116,7 @@ export function nameMatches(korean: string, roman: string): boolean {
     let acc = "";
     for (let j = i; j < parts.length; j++) {
       acc += parts[j];
-      if (squash(acc) === a) return true;
+          if (acc === a) return true;  // 단순하게: 뭉개지 않고 그대로 비교한다
       if (acc.length > a.length) break;
     }
   }
