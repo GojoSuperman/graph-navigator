@@ -1,0 +1,20 @@
+# PR이 올라오면 테스트를 돌린다. 테스트는 픽스처 그래프만 써서 LLM, 네트워크 비용이 들지 않는다.
+name: ci
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
